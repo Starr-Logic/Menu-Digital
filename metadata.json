@@ -1,0 +1,6 @@
+{
+  "name": "QR Code Menu Ordering",
+  "description": "A QR Code Menu Ordering System featuring a clean Express/Sequelize backend with SQLite and an elegant React customer ordering menu and order dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
