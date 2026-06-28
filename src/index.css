@@ -1,15 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Kantumruy Pro", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Segoe UI", "Noto Sans Khmer", "Khmer OS", "Arial Unicode MS", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  font-family: "Segoe UI", "Noto Sans Khmer", "Khmer OS", "Arial Unicode MS", ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
   background-color: #020617;
   color: #f1f5f9;
   font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom scrollbars */

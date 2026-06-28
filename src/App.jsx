@@ -6,13 +6,15 @@ import {
   QrCode,
   X,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import QrGenerator from './components/QrGenerator';
 import AdminDashboard from './components/AdminDashboard';
 import AddProduct from './components/AddProduct';
+import AdminLogin from './components/AdminLogin';
 import Navbar from './components/Navbar';
 import MenuCard from './components/MenuCard';
 import CartModal from './components/CartModal';
@@ -23,6 +25,11 @@ export default function App() {
 
   // Navigation / View state: 'customer' or 'kitchen'
   const [activeTab, setActiveTab] = useState('customer');
+  
+  // Authentication state
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [adminToken, setAdminToken] = useState(null);
+  const [adminUser, setAdminUser] = useState(null);
   
   // Products and Orders states from Backend APIs
   const [products, setProducts] = useState([]);
@@ -51,6 +58,35 @@ export default function App() {
     }, 4000);
   };
 
+  // Handle admin login
+  const handleAdminLogin = (token, user) => {
+    setAdminToken(token);
+    setAdminUser(user);
+    setIsAdminLoggedIn(true);
+    triggerToast(`Welcome ${user.username}!`, 'success');
+    setActiveTab('kitchen');
+  };
+
+  const resetCustomerOrderState = () => {
+    setCart({});
+    setOrderNote('');
+    setIsMobileCartOpen(false);
+    setLastPlacedOrder(null);
+    setShowQrModal(false);
+  };
+
+  // Handle admin logout
+  const handleAdminLogout = () => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    setAdminToken(null);
+    setAdminUser(null);
+    setIsAdminLoggedIn(false);
+    resetCustomerOrderState();
+    setActiveTab('customer');
+    triggerToast('Logged out successfully', 'success');
+  };
+
   // URL Parameter Detection for table number (e.g., ?table=5 or ?table=Table 5)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -66,6 +102,24 @@ export default function App() {
       }
       setSelectedTable(formattedTable);
       triggerToast(`Table connection established: ${formattedTable}`, 'success');
+    }
+  }, []);
+
+  // Check for stored authentication token on mount
+  useEffect(() => {
+    const storedToken = localStorage.getItem('adminToken');
+    const storedUser = localStorage.getItem('adminUser');
+    
+    if (storedToken && storedUser) {
+      try {
+        setAdminToken(storedToken);
+        setAdminUser(JSON.parse(storedUser));
+        setIsAdminLoggedIn(true);
+      } catch (err) {
+        console.error('Error restoring auth:', err);
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+      }
     }
   }, []);
 
@@ -291,7 +345,10 @@ export default function App() {
         setActiveTab={setActiveTab} 
         statsPending={stats.pending} 
         fetchOrders={fetchOrders} 
-        triggerToast={triggerToast} 
+        triggerToast={triggerToast}
+        isAdminLoggedIn={isAdminLoggedIn}
+        adminUser={adminUser}
+        onLogout={handleAdminLogout}
       />
 
       {/* Main Container */}
@@ -302,75 +359,76 @@ export default function App() {
         {/* ==================================== */}
         {activeTab === 'customer' && (
           <div className="space-y-8">
-            
-            {/* Table Header Banner */}
-            <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-800 overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-amber-500/10 to-orange-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-              
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-                <div className="space-y-3.5">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold">
-                    <Sparkles className="w-3.5 h-3.5 animate-spin-slow" />
-                    {t('interactive_table_ordering')}
+            {isAdminLoggedIn ? (
+            <div className="relative overflow-hidden rounded-[28px] border border-slate-800/80 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-6 sm:p-8 shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.16),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.12),transparent_35%)]" />
+                
+              <div className="relative z-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6 min-w-0">
+                <div className="max-w-2xl min-w-0 space-y-4">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-amber-300">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {t('interactive_table_ordering')}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="rounded-2xl border border-slate-800 bg-slate-950/80 px-4 py-3 shadow-inner">
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">{t('active_session')}</p>
+                        <p className="mt-1 text-2xl sm:text-3xl font-black tracking-tight text-white">
+                          {selectedTable.replace('Table', t('table'))}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 px-4 py-3">
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">{t('table_qr_links')}</p>
+                        <p className="mt-1 text-sm font-medium text-slate-300">{t('generate_qr_desc')}</p>
+                      </div>
+                    </div>
+
+                    <p className="max-w-xl text-sm leading-relaxed text-slate-400">
+                      {t('browse_menu_desc')}
+                    </p>
+                     
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 pt-1">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">{t('simulate_scanning')}</span>
+                      <div className="flex flex-wrap gap-2">
+                        {['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Table 5', 'Table 6'].map(tbl => (
+                          <button
+                            key={tbl}
+                            onClick={() => {
+                              setSelectedTable(tbl);
+                              triggerToast(t('switched_session', { table: tbl.replace('Table', t('table')) }), 'success');
+                            }}
+                            className={`rounded-full px-3 py-1.5 text-[11px] font-extrabold transition-all ${
+                              selectedTable === tbl 
+                                ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/15' 
+                                : 'bg-slate-800/90 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                            }`}
+                          >
+                            {tbl.replace('Table', t('table'))}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-none text-slate-100">
-                    {t('active_session')}: <span className="text-amber-400">{selectedTable.replace('Table', t('table'))}</span>
-                  </h2>
-                  <p className="text-slate-400 text-xs sm:text-sm max-w-xl font-light leading-relaxed">
-                    {t('browse_menu_desc')}
-                  </p>
-                  
-                  {/* Quick table switcher for testing */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 pt-2">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{t('simulate_scanning')}</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Table 5', 'Table 6'].map(tbl => (
-                        <button
-                          key={tbl}
-                          onClick={() => {
-                            setSelectedTable(tbl);
-                            triggerToast(t('switched_session', { table: tbl.replace('Table', t('table')) }), 'success');
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition-all ${
-                            selectedTable === tbl 
-                              ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/15' 
-                              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
-                          }`}
-                        >
-                          {tbl.replace('Table', t('table'))}
-                        </button>
-                      ))}
+
+                  <div className="flex items-center gap-3 rounded-2xl border border-slate-800/80 bg-slate-950/80 px-4 py-3 shadow-inner self-start xl:self-auto">
+                    <div className="flex h-12 min-w-45 w-12 items-center justify-center rounded-2xl bg-white shadow-md">
+                      <QrCode className="h-8 w-8 text-slate-950" />
+                    </div>
+                    <div className="min-w-45">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">Quick access</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-200">Open the menu and place your order in seconds.</p>
                     </div>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-4 bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 self-start md:self-auto shadow-inner">
-                  <div className="p-2.5 bg-white rounded-xl shadow-md">
-                    <QrCode className="w-14 h-14 text-slate-950" />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-xs text-slate-200">{t('table_qr_links')}</h3>
-                    <p className="text-[10px] text-slate-500 mt-1 leading-normal">{t('generate_qr_desc')}</p>
-                    <button 
-                      onClick={() => setShowQrModal(true)}
-                      className="mt-2.5 flex items-center gap-1 text-xs text-amber-400 font-extrabold hover:text-amber-300 transition-colors"
-                    >
-                      {t('open_qr_hub')}
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
               </div>
-            </div>
-
-            {/* Layout: Menu list & Desktop sidebar cart */}
+            ) : null}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
               
               {/* Left columns (Products list - Category filter + categorized grids) */}
               <div className="lg:col-span-2 space-y-6">
                 
                 {/* Horizontal Category Selector */}
-                <div className="flex overflow-x-auto pb-1 gap-2 scrollbar-none sticky top-16 z-20 bg-slate-950 py-2.5">
+                <div className="flex overflow-x-auto pb-1 gap-2 scrollbar-none sticky top-16 z-20 bg-slate-950 py-2.5 min-w-0">
                   {categories.map(cat => (
                     <button
                       key={cat}
@@ -523,13 +581,17 @@ export default function App() {
         {/* ==================================== */}
         {/* VIEW 2: KITCHEN STAFF MONITOR VIEW   */}
         {/* ==================================== */}
-        {activeTab === 'kitchen' && (
+        {activeTab === 'kitchen' && !isAdminLoggedIn ? (
+          <AdminLogin onLoginSuccess={handleAdminLogin} />
+        ) : activeTab === 'kitchen' && isAdminLoggedIn ? (
           <AdminDashboard 
             onNewOrderToast={(msg) => triggerToast(msg, 'success')} 
           />
-        )}
+        ) : null}
 
-        {activeTab === 'qr-generator' && (
+        {activeTab === 'qr-generator' && !isAdminLoggedIn ? (
+          <AdminLogin onLoginSuccess={handleAdminLogin} />
+        ) : activeTab === 'qr-generator' && isAdminLoggedIn ? (
           <QrGenerator 
             onSelectTable={(tableName) => {
               setSelectedTable(tableName);
@@ -539,9 +601,11 @@ export default function App() {
               setActiveTab('customer');
             }}
           />
-        )}
+        ) : null}
 
-        {activeTab === 'add-product' && (
+        {activeTab === 'add-product' && !isAdminLoggedIn ? (
+          <AdminLogin onLoginSuccess={handleAdminLogin} />
+        ) : activeTab === 'add-product' && isAdminLoggedIn ? (
           <AddProduct 
             onProductAdded={(product, isEditing, action = 'create') => {
               fetchProducts();
@@ -559,7 +623,7 @@ export default function App() {
               setActiveTab('customer');
             }}
           />
-        )}
+        ) : null}
 
       </main>
 

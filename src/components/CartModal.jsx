@@ -39,7 +39,7 @@ export default function CartModal({
 
   // Unified Cart Panel Inner Content
   const renderCartPanelContent = () => (
-    <div className="space-y-6" id="cart-panel-inner">
+    <div className="space-y-6 min-w-0" id="cart-panel-inner">
       {/* Header */}
       <div className="flex justify-between items-center border-b border-slate-800 pb-4" id="cart-header">
         <div className="flex items-center gap-2.5">
@@ -65,7 +65,7 @@ export default function CartModal({
           </div>
           <div className="space-y-1">
             <p className="text-slate-300 text-sm font-bold">{t('basket_empty')}</p>
-            <p className="text-xs text-slate-500 max-w-[240px] mx-auto">{t('select_items')}</p>
+            <p className="text-xs text-slate-500 max-w-60 mx-auto">{t('select_items')}</p>
           </div>
         </div>
       ) : (
@@ -76,7 +76,7 @@ export default function CartModal({
               const prod = products.find(p => p.id === parseInt(id));
               if (!prod) return null;
               return (
-                <div key={id} className="flex items-center justify-between py-3.5 first:pt-0" id={`cart-item-${id}`}>
+                <div key={id} className="flex items-center justify-between py-3.5 first:pt-0 min-w-0" id={`cart-item-${id}`}>
                   <div className="space-y-1">
                     <h4 className="text-sm font-bold text-slate-200 line-clamp-1">{prod.name}</h4>
                     <p className="text-xs text-slate-500 font-medium">${prod.price.toFixed(2)} {t('each')}</p>
@@ -238,7 +238,7 @@ export default function CartModal({
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                className="absolute bottom-0 inset-x-0 bg-slate-900 rounded-t-[32px] border-t border-slate-800 p-6 space-y-6 max-h-[85vh] overflow-y-auto"
+                className="absolute bottom-0 inset-x-0 bg-slate-900 rounded-t-4xl border-t border-slate-800 p-6 space-y-6 max-h-[85vh] overflow-y-auto"
                 id="mobile-cart-drawer-sheet"
               >
                 <div className="w-12 h-1.5 bg-slate-800 rounded-full mx-auto mb-1" />

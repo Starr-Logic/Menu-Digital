@@ -1,7 +1,9 @@
 import { Sequelize } from 'sequelize';
+import bcrypt from 'bcrypt';
 import defineProduct from './Product.js';
 import defineOrder from './Order.js';
 import defineOrderItem from './OrderItem.js';
+import defineAdmin from './Admin.js';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -43,6 +45,7 @@ if (useMySQL) {
 const Product = defineProduct(sequelize);
 const Order = defineOrder(sequelize);
 const OrderItem = defineOrderItem(sequelize);
+const Admin = defineAdmin(sequelize);
 
 // Define relations
 Order.hasMany(OrderItem, { as: 'items', foreignKey: 'order_id', onDelete: 'CASCADE' });
@@ -50,6 +53,29 @@ OrderItem.belongsTo(Order, { foreignKey: 'order_id' });
 
 Product.hasMany(OrderItem, { foreignKey: 'product_id' });
 OrderItem.belongsTo(Product, { as: 'product', foreignKey: 'product_id' });
+
+function isBcryptHash(value) {
+  return typeof value === 'string' && /^\$2[aby]\$/.test(value);
+}
+
+async function ensureDefaultAdmin() {
+  const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin';
+  let admin = await Admin.findOne({ where: { username: adminUsername } });
+
+  if (!admin) {
+    await Admin.create({ username: adminUsername, password: adminPassword });
+    console.log(`Created default admin account '${adminUsername}'.`);
+    return;
+  }
+
+  const storedPassword = admin.getDataValue('password');
+  if (!isBcryptHash(storedPassword)) {
+    admin.password = adminPassword;
+    await admin.save();
+    console.log(`Updated admin account '${adminUsername}' to a secure password.`);
+  }
+}
 
 // Initialize database & seed initial products
 async function initializeDatabase() {
@@ -60,6 +86,8 @@ async function initializeDatabase() {
     // Sync models
     await sequelize.sync();
     console.log('Database synchronized.');
+
+    await ensureDefaultAdmin();
 
     // Seed default products if empty
     const productCount = await Product.count();
@@ -142,5 +170,6 @@ export {
   Product,
   Order,
   OrderItem,
+  Admin,
   initializeDatabase,
 };

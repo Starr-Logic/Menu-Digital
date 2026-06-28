@@ -5,6 +5,7 @@ import { createServer as createViteServer } from 'vite';
 import { initializeDatabase } from './models/index.js';
 import productsRouter from './routes/products.js';
 import ordersRouter from './routes/orders.js';
+import authRouter from './routes/auth.js';
 import http from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
@@ -49,6 +50,7 @@ async function startServer() {
   // API Routes
   app.use('/api/products', productsRouter);
   app.use('/api/orders', ordersRouter);
+  app.use('/api/auth', authRouter);
 
   // Serve static assets in production, or mount Vite middleware in development
   if (process.env.NODE_ENV !== 'production') {

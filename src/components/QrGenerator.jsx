@@ -135,7 +135,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
           <title>Print BiteQR - ${table.name}</title>
           <style>
             body {
-              font-family: 'Inter', system-ui, sans-serif;
+              font-family: 'Segoe UI', 'Noto Sans Khmer', 'Khmer OS', 'Arial Unicode MS', system-ui, sans-serif;
               text-align: center;
               margin: 0;
               padding: 40px;
@@ -262,7 +262,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
           <title>Print All BiteQR Codes</title>
           <style>
             body {
-              font-family: 'Inter', system-ui, sans-serif;
+              font-family: 'Segoe UI', 'Noto Sans Khmer', 'Khmer OS', 'Arial Unicode MS', system-ui, sans-serif;
               margin: 0;
               padding: 0;
               background: #ffffff;
@@ -405,7 +405,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
               Quickly clear and fill the board with a sequential series of dine-in tables.
             </p>
             
-            <div className="grid grid-cols-2 gap-4 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               <div className="space-y-1.5">
                 <label className="text-[10px] text-slate-400 font-extrabold uppercase">Start Number</label>
                 <input 

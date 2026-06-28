@@ -114,7 +114,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
           <title>Print BiteQR - ${table.name}</title>
           <style>
             body {
-              font-family: 'Inter', system-ui, sans-serif;
+              font-family: 'Segoe UI', 'Noto Sans Khmer', 'Khmer OS', 'Arial Unicode MS', system-ui, sans-serif;
               text-align: center;
               margin: 0;
               padding: 40px;
@@ -241,7 +241,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
           <title>Print All BiteQR Codes</title>
           <style>
             body {
-              font-family: 'Inter', system-ui, sans-serif;
+              font-family: 'Segoe UI', 'Noto Sans Khmer', 'Khmer OS', 'Arial Unicode MS', system-ui, sans-serif;
               margin: 0;
               padding: 0;
               background: #ffffff;
@@ -338,7 +338,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
       
       {/* Intro Header Banner */}
       <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-800 overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-amber-500/10 to-indigo-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-linear-to-br from-amber-500/10 to-indigo-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-3.5">
@@ -533,7 +533,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
                 </div>
                 <div className="space-y-1">
                   <p className="text-slate-300 text-sm font-bold">QR Sticker Board is empty</p>
-                  <p className="text-xs text-slate-500 max-w-[280px] mx-auto">Use the range loop generator on the left to quickly populate table QR assets!</p>
+                  <p className="text-xs text-slate-500 max-w-70 mx-auto">Use the range loop generator on the left to quickly populate table QR assets!</p>
                 </div>
               </div>
             ) : (

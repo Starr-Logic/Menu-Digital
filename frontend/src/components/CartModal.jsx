@@ -65,7 +65,7 @@ export default function CartModal({
           </div>
           <div className="space-y-1">
             <p className="text-slate-300 text-sm font-bold">{t('basket_empty')}</p>
-            <p className="text-xs text-slate-500 max-w-[240px] mx-auto">{t('select_items')}</p>
+            <p className="text-xs text-slate-500 max-w-60 mx-auto">{t('select_items')}</p>
           </div>
         </div>
       ) : (
@@ -238,7 +238,7 @@ export default function CartModal({
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                className="absolute bottom-0 inset-x-0 bg-slate-900 rounded-t-[32px] border-t border-slate-800 p-6 space-y-6 max-h-[85vh] overflow-y-auto"
+                className="absolute bottom-0 inset-x-0 bg-slate-900 rounded-t-4xl border-t border-slate-800 p-6 space-y-6 max-h-[85vh] overflow-y-auto"
                 id="mobile-cart-drawer-sheet"
               >
                 <div className="w-12 h-1.5 bg-slate-800 rounded-full mx-auto mb-1" />

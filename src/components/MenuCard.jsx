@@ -12,7 +12,7 @@ export default function MenuCard({ product, cartQty, addToCart, removeFromCart }
   return (
     <div 
       id={`menu-card-${product.id}`}
-      className="bg-slate-900/60 rounded-3xl border border-slate-800/80 hover:border-slate-700/80 shadow-md hover:shadow-xl hover:bg-slate-900/80 transition-all duration-300 overflow-hidden flex flex-col group"
+      className="bg-slate-900/60 rounded-3xl border border-slate-800/80 hover:border-slate-700/80 shadow-md hover:shadow-xl hover:bg-slate-900/80 transition-all duration-300 overflow-hidden flex flex-col group w-full min-w-0"
     >
       {/* Product Image */}
       <div className="aspect-video w-full overflow-hidden relative bg-slate-950 border-b border-slate-800/50" id={`menu-image-container-${product.id}`}>
@@ -39,7 +39,7 @@ export default function MenuCard({ product, cartQty, addToCart, removeFromCart }
       </div>
 
       {/* Content Details */}
-      <div className="p-5 flex-1 flex flex-col justify-between space-y-4" id={`menu-details-${product.id}`}>
+      <div className="p-5 flex-1 flex flex-col justify-between space-y-4 min-w-0" id={`menu-details-${product.id}`}>
         <div className="space-y-1.5">
           <h4 className="font-extrabold text-slate-100 text-sm sm:text-base leading-snug group-hover:text-amber-400 transition-colors">
             {product.name}

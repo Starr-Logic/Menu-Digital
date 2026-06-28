@@ -203,7 +203,7 @@ export default function AdminDashboard({ onNewOrderToast }) {
     <div className="space-y-8 animate-fade-in">
       
       {/* Metrics Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         
         <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 flex items-center gap-4">
           <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
