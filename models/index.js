@@ -7,21 +7,33 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-// Configure Sequelize using environment variables in production, and fall back to local defaults when running locally.
+// Configure Sequelize using environment variables in production.
+// When DB_HOST is provided, use MySQL.
+// When no DB_HOST is configured, fall back to SQLite for local or simple deployments.
 const dbName = process.env.DB_NAME || 'menu_digital_db';
 const dbUser = process.env.DB_USER || 'root';
 const dbPassword = process.env.DB_PASSWORD || '123456';
-const dbHost = process.env.DB_HOST || 'localhost';
+const dbHost = process.env.DB_HOST;
 const dbPort = parseInt(process.env.DB_PORT || '3306', 10);
+const useMySQL = Boolean(dbHost);
 
-console.log(`Configuring Sequelize for MySQL database at ${dbHost}:${dbPort}`);
-
-const sequelize = new Sequelize(dbName, dbUser, dbPassword, {
-  host: dbHost,
-  port: dbPort,
-  dialect: 'mysql',
-  logging: false,
-});
+let sequelize;
+if (useMySQL) {
+  console.log(`Configuring Sequelize for MySQL database at ${dbHost}:${dbPort}`);
+  sequelize = new Sequelize(dbName, dbUser, dbPassword, {
+    host: dbHost,
+    port: dbPort,
+    dialect: 'mysql',
+    logging: false,
+  });
+} else {
+  console.log('No DB_HOST configured. Falling back to SQLite for database storage.');
+  sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: './database.sqlite',
+    logging: false,
+  });
+}
 
 const Product = defineProduct(sequelize);
 const Order = defineOrder(sequelize);
