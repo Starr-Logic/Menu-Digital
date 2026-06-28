@@ -7,34 +7,21 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-// Determine database config
-// We check if we are in the cloud sandbox environment (e.g., Cloud Run / AI Studio preview)
-// In the cloud sandbox, we always use SQLite because there is no local MySQL server running.
-// This allows the preview to work perfectly out-of-the-box, while local runs can use MySQL.
-const isCloudSandbox = process.env.K_SERVICE || (process.env.APP_URL && process.env.APP_URL.includes('.run.app'));
+// Configure Sequelize using environment variables in production, and fall back to local defaults when running locally.
+const dbName = process.env.DB_NAME || 'menu_digital_db';
+const dbUser = process.env.DB_USER || 'root';
+const dbPassword = process.env.DB_PASSWORD || '123456';
+const dbHost = process.env.DB_HOST || 'localhost';
+const dbPort = parseInt(process.env.DB_PORT || '3306', 10);
 
-const useMySQL = !isCloudSandbox && process.env.DB_HOST && process.env.DB_USER && process.env.DB_NAME;
+console.log(`Configuring Sequelize for MySQL database at ${dbHost}:${dbPort}`);
 
-if (isCloudSandbox) {
-  console.log('Running in AI Studio cloud preview environment. Using SQLite database for seamless preview.');
-} else if (useMySQL) {
-  console.log(`Configuring Sequelize for MySQL database at ${process.env.DB_HOST}:${process.env.DB_PORT || '3306'}`);
-} else {
-  console.log('No MySQL configuration found. Using SQLite database.');
-}
-
-const sequelize = useMySQL
-  ? new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
-      host: process.env.DB_HOST,
-      dialect: 'mysql',
-      logging: false,
-      port: parseInt(process.env.DB_PORT || '3306', 10),
-    })
-  : new Sequelize({
-      dialect: 'sqlite',
-      storage: './database.sqlite',
-      logging: false,
-    });
+const sequelize = new Sequelize(dbName, dbUser, dbPassword, {
+  host: dbHost,
+  port: dbPort,
+  dialect: 'mysql',
+  logging: false,
+});
 
 const Product = defineProduct(sequelize);
 const Order = defineOrder(sequelize);
