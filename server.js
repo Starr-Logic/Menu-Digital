@@ -65,6 +65,15 @@ async function startServer() {
     });
   }
 
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use. Close the process using it or change PORT in .env and try again.`);
+      process.exit(1);
+    }
+    console.error('Server error:', error);
+    process.exit(1);
+  });
+
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   });
