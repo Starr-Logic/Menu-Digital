@@ -13,9 +13,10 @@ dotenv.config();
 const dbName = process.env.DB_NAME || 'menu_digital_db';
 const dbUser = process.env.DB_USER || 'root';
 const dbPassword = process.env.DB_PASSWORD || '123456';
-const dbHost = process.env.DB_HOST;
+const dbHost = process.env.DB_HOST || '';
 const dbPort = parseInt(process.env.DB_PORT || '3306', 10);
-const useMySQL = Boolean(dbHost);
+const isProduction = process.env.NODE_ENV === 'production';
+const useMySQL = Boolean(dbHost) && !(isProduction && dbHost === 'localhost');
 
 let sequelize;
 if (useMySQL) {
@@ -27,7 +28,11 @@ if (useMySQL) {
     logging: false,
   });
 } else {
-  console.log('No DB_HOST configured. Falling back to SQLite for database storage.');
+  if (isProduction && dbHost === 'localhost') {
+    console.warn('Running in production and DB_HOST is set to localhost. Falling back to SQLite instead of connecting to localhost:3306.');
+  } else {
+    console.log('No DB_HOST configured. Falling back to SQLite for database storage.');
+  }
   sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: './database.sqlite',
