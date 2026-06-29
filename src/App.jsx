@@ -231,6 +231,7 @@ export default function App() {
         body: JSON.stringify({
           table_number: selectedTable,
           items: orderItems,
+          note: orderNote,
         }),
       });
 

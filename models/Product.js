@@ -20,7 +20,7 @@ export default function(sequelize) {
       allowNull: true,
     },
     image: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT('long'),
       allowNull: true,
     },
     category: {

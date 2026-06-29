@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const { table_number, items } = req.body;
+    const { table_number, items, note } = req.body;
 
     if (!table_number) {
       return res.status(400).json({ error: 'table_number is required' });
@@ -77,6 +77,7 @@ router.post('/', async (req, res) => {
     const order = await Order.create({
       table_number,
       total_price,
+      note: note ? note.trim() : null,
       status: 'Pending'
     }, { transaction });
 

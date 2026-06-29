@@ -16,6 +16,10 @@ export default function(sequelize) {
       allowNull: false,
       defaultValue: 0,
     },
+    note: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     status: {
       type: DataTypes.ENUM('Pending', 'Preparing', 'Served', 'Cancelled'),
       allowNull: false,

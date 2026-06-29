@@ -405,9 +405,12 @@ export default function AdminDashboard({ onNewOrderToast }) {
 
                   {/* Order Notes */}
                   {order.note && (
-                    <div className="p-2.5 bg-rose-500/5 border border-rose-500/10 rounded-xl text-[11px] text-rose-300 leading-normal flex items-start gap-1.5">
-                      <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
-                      <span>Note: "{order.note}"</span>
+                    <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-[12px] text-rose-100 leading-normal">
+                      <div className="flex items-center gap-2 mb-1 text-[10px] uppercase tracking-[0.18em] font-black text-rose-200">
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-300 shrink-0" />
+                        <span>Customer Note</span>
+                      </div>
+                      <p className="whitespace-pre-line text-sm text-rose-100">{order.note}</p>
                     </div>
                   )}
 

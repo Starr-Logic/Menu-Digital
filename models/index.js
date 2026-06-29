@@ -83,9 +83,9 @@ async function initializeDatabase() {
     await sequelize.authenticate();
     console.log('Database connected successfully.');
     
-    // Sync models
-    await sequelize.sync();
-    console.log('Database synchronized.');
+    // Sync models and apply missing columns when an older local database exists
+    await sequelize.sync({ alter: true });
+    console.log('Database synchronized (alter).');
 
     await ensureDefaultAdmin();
 
