@@ -16,52 +16,29 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
-const PRESET_IMAGES = [
-  {
-    name: 'Gourmet Burger',
-    url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Fresh Salad',
-    url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Cappuccino / Latte',
-    url: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Strawberry Cake',
-    url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Pepperoni Pizza',
-    url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Sushi Platter',
-    url: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=600&q=80',
-  }
-];
+const PRESET_IMAGES = [];
 
 const createEmptyForm = () => ({
   name: '',
   price: '',
   category: 'Food',
   description: '',
-  image: PRESET_IMAGES[0].url
+  image: ''
 });
 
 export default function AddProduct({ onProductAdded, onCancel }) {
   const [formData, setFormData] = useState(createEmptyForm());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [imagePreview, setImagePreview] = useState(PRESET_IMAGES[0].url);
+  const [imagePreview, setImagePreview] = useState('');
   const [imageSourceMode, setImageSourceMode] = useState('preset');
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [alertMessage, setAlertMessage] = useState(null);
 
   const categories = ['Food', 'Drinks', 'Dessert', 'Appetizer', 'Specialty'];
 
@@ -89,10 +66,10 @@ export default function AddProduct({ onProductAdded, onCancel }) {
         price: product.price ?? '',
         category: product.category || 'Food',
         description: product.description || '',
-        image: product.image || PRESET_IMAGES[0].url
+        image: product.image || ''
       });
-      setImagePreview(product.image || PRESET_IMAGES[0].url);
-      setImageSourceMode(product.image?.startsWith('/uploads/') ? 'upload' : product.image?.startsWith('http') ? 'url' : 'preset');
+      setImagePreview(product.image || '');
+      setImageSourceMode(product.image?.startsWith('/uploads/') ? 'upload' : product.image?.startsWith('http') ? 'url' : 'upload');
       setSelectedProductId(product.id);
       setSelectedFile(null);
       setIsEditing(true);
@@ -100,8 +77,8 @@ export default function AddProduct({ onProductAdded, onCancel }) {
     }
 
     setFormData(createEmptyForm());
-    setImagePreview(PRESET_IMAGES[0].url);
-    setImageSourceMode('preset');
+    setImagePreview('');
+    setImageSourceMode('upload');
     setSelectedProductId(null);
     setSelectedFile(null);
     setIsEditing(false);
@@ -118,13 +95,6 @@ export default function AddProduct({ onProductAdded, onCancel }) {
       setImagePreview(value);
       setSelectedFile(null);
     }
-  };
-
-  const handleSelectPreset = (url) => {
-    setFormData((prev) => ({ ...prev, image: url }));
-    setImagePreview(url);
-    setSelectedFile(null);
-    setImageSourceMode('preset');
   };
 
   const processFile = (file) => {
@@ -169,7 +139,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert('Product Name is required');
+      setAlertMessage({ type: 'error', text: 'Product Name is required' });
       return;
     }
 
@@ -193,10 +163,14 @@ export default function AddProduct({ onProductAdded, onCancel }) {
         payload.append('image', formData.image);
       }
 
+      const token = localStorage.getItem('adminToken');
       const response = await fetch(
         isEditing && selectedProductId ? `${API_BASE_URL}/products/${selectedProductId}` : `${API_BASE_URL}/products`,
         {
           method: isEditing ? 'PUT' : 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
           body: payload
         }
       );
@@ -215,33 +189,47 @@ export default function AddProduct({ onProductAdded, onCancel }) {
       resetForm(isEditing ? savedProduct : null);
     } catch (err) {
       console.error(err);
-      alert(err.message || 'Error occurred while saving product');
+      setAlertMessage({ type: 'error', text: err.message || 'Error occurred while saving product' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (product) => {
-    if (!product?.id || !window.confirm(`Delete ${product.name}?`)) return;
+    if (!product?.id) return;
+    
+    // Show confirmation modal
+    setConfirmDelete(product);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!confirmDelete?.id) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/products/${product.id}`, { method: 'DELETE' });
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${API_BASE_URL}/products/${confirmDelete.id}`, { method: 'DELETE', headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      } });
       if (!response.ok) {
         const errData = await response.json();
         throw new Error(errData.error || 'Failed to delete product');
       }
 
       await fetchProducts();
-      if (selectedProductId === product.id) {
+      if (selectedProductId === confirmDelete.id) {
         resetForm();
       }
 
       if (onProductAdded) {
-        onProductAdded(product, true, 'delete');
+        onProductAdded(confirmDelete, true, 'delete');
       }
+
+      setAlertMessage({ type: 'success', text: `${confirmDelete.name} deleted successfully` });
+      setConfirmDelete(null);
     } catch (error) {
       console.error(error);
-      alert(error.message || 'Error deleting product');
+      setAlertMessage({ type: 'error', text: error.message || 'Error deleting product' });
+      setConfirmDelete(null);
     }
   };
 
@@ -384,15 +372,6 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                   <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-850">
                     <button
                       type="button"
-                      onClick={() => setImageSourceMode('preset')}
-                      className={`px-2.5 py-1 text-[10px] font-black rounded-md transition-all ${
-                        imageSourceMode === 'preset' ? 'bg-teal-500/10 text-teal-400' : 'text-slate-500 hover:text-slate-300'
-                      }`}
-                    >
-                      Presets
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => setImageSourceMode('url')}
                       className={`px-2.5 py-1 text-[10px] font-black rounded-md transition-all ${
                         imageSourceMode === 'url' ? 'bg-teal-500/10 text-teal-400' : 'text-slate-500 hover:text-slate-300'
@@ -411,41 +390,6 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                     </button>
                   </div>
                 </div>
-
-                {imageSourceMode === 'preset' && (
-                  <div className="space-y-3">
-                    <div className="text-[11px] text-slate-500 leading-relaxed">
-                      Pick a starter image or keep the current one.
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {PRESET_IMAGES.map((preset) => (
-                        <button
-                          key={preset.name}
-                          type="button"
-                          onClick={() => handleSelectPreset(preset.url)}
-                          className={`group relative h-16 rounded-xl overflow-hidden border transition-all text-left ${
-                            formData.image === preset.url ? 'border-teal-500 ring-2 ring-teal-500/20' : 'border-slate-850 hover:border-slate-700'
-                          }`}
-                        >
-                          <img
-                            src={preset.url}
-                            alt={preset.name}
-                            className="w-full h-full object-cover brightness-[0.4] group-hover:brightness-50 transition-all"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute inset-0 p-2 flex flex-col justify-end">
-                            <span className="text-[9px] font-black text-slate-200 line-clamp-1 leading-tight">{preset.name}</span>
-                          </div>
-                          {formData.image === preset.url && (
-                            <span className="absolute top-1.5 right-1.5 p-0.5 bg-teal-500 text-slate-950 rounded-full">
-                              <Check className="w-2.5 h-2.5 stroke-4" />
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {imageSourceMode === 'url' && (
                   <div className="space-y-2">
@@ -634,6 +578,67 @@ export default function AddProduct({ onProductAdded, onCancel }) {
           </div>
         </div>
       </div>
+
+      {/* Alert/Toast Modal */}
+      {alertMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setAlertMessage(null)} />
+          <div className={`relative rounded-2xl border p-6 max-w-sm w-full shadow-2xl ${
+            alertMessage.type === 'error' 
+              ? 'bg-rose-950/80 border-rose-900/40' 
+              : 'bg-emerald-950/80 border-emerald-900/40'
+          }`}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-3 h-3 rounded-full ${
+                alertMessage.type === 'error' ? 'bg-rose-500' : 'bg-emerald-500'
+              }`} />
+              <h3 className={`font-black text-sm ${
+                alertMessage.type === 'error' ? 'text-rose-400' : 'text-emerald-400'
+              }`}>
+                {alertMessage.type === 'error' ? 'Error' : 'Success'}
+              </h3>
+            </div>
+            <p className="text-slate-200 text-sm mb-4">{alertMessage.text}</p>
+            <button
+              onClick={() => setAlertMessage(null)}
+              className={`w-full py-2 rounded-lg font-bold text-sm transition-all ${
+                alertMessage.type === 'error'
+                  ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
+                  : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+              }`}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setConfirmDelete(null)} />
+          <div className="relative rounded-2xl border border-rose-900/40 bg-slate-950/90 p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="font-black text-slate-100 mb-2">Delete Product?</h3>
+            <p className="text-slate-400 text-sm mb-6">
+              Are you sure you want to delete <span className="text-amber-400">{confirmDelete.name}</span>? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2.5 rounded-lg border border-slate-800 text-slate-300 hover:bg-slate-800 font-bold text-sm transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteProduct}
+                className="flex-1 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm transition-all"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -15,9 +15,13 @@ import QrGenerator from './components/QrGenerator';
 import AdminDashboard from './components/AdminDashboard';
 import AddProduct from './components/AddProduct';
 import AdminLogin from './components/AdminLogin';
+import Analytics from './components/Analytics';
+import Settings from './components/Settings';
 import Navbar from './components/Navbar';
 import MenuCard from './components/MenuCard';
 import CartModal from './components/CartModal';
+import ProductDetailModal from './components/ProductDetailModal';
+import OrderSuccessModal from './components/OrderSuccessModal';
 import { API_BASE_URL } from './config';
 
 export default function App() {
@@ -46,6 +50,23 @@ export default function App() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [orderNote, setOrderNote] = useState('');
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [settings, setSettings] = useState(null);
+
+  const handleOpenCart = () => setIsMobileCartOpen(true);
+  const handleShowTableModal = () => setShowQrModal(true);
+  const openHelp = () => { window.location.href = 'mailto:contact@biteqr.com'; };
+  const openContact = () => { window.location.href = 'tel:+85523123456'; };
+
+  const openProductModal = (product) => {
+    setSelectedProduct(product);
+    setIsProductModalOpen(true);
+  };
+  const closeProductModal = () => {
+    setSelectedProduct(null);
+    setIsProductModalOpen(false);
+  };
 
   // Notifications state
   const [toast, setToast] = useState(null);
@@ -141,9 +162,24 @@ export default function App() {
 
   // Fetch Orders from GET /api/orders
   const fetchOrders = async (silent = false) => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      if (!silent) setOrdersLoading(false);
+      return;
+    }
+
     try {
       if (!silent) setOrdersLoading(true);
-      const res = await fetch(`${API_BASE_URL}/orders`);
+      const res = await fetch(`${API_BASE_URL}/orders`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.status === 401) {
+        if (!silent) triggerToast('Admin authentication required to load orders', 'error');
+        setOrders([]);
+        return;
+      }
       if (!res.ok) throw new Error('Failed to fetch orders');
       const data = await res.json();
       setOrders(data);
@@ -158,7 +194,18 @@ export default function App() {
   // On mount: fetch products and orders, setup polling
   useEffect(() => {
     fetchProducts();
-    fetchOrders();
+    // Fetch settings for client-side validation (min order, currency)
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (err) {
+        console.error('Failed to load settings for app:', err);
+      }
+    })();
 
     // Poll orders every 5 seconds for live status/updates
     const interval = setInterval(() => {
@@ -214,7 +261,20 @@ export default function App() {
   // Submit order to POST /api/orders
   const handlePlaceOrder = async () => {
     if (getCartItemCount() === 0) return;
-    
+    // Client-side minimum order validation
+    try {
+      const minRaw = settings && settings.minOrderValue ? settings.minOrderValue.toString() : null;
+      const minNumeric = minRaw ? parseFloat(minRaw.replace(/[^0-9.]/g, '')) || 0 : 0;
+      const cartTotal = getCartTotal();
+      if (minNumeric > 0 && cartTotal < minNumeric) {
+        triggerToast(`Minimum order is ${settings.minOrderValue}`, 'error');
+        return;
+      }
+    } catch (err) {
+      // ignore parsing errors and continue
+      console.warn('Error parsing min order value:', err);
+    }
+
     setIsPlacingOrder(true);
     try {
       // Build order items list of { product_id, quantity }
@@ -258,10 +318,12 @@ export default function App() {
   // Update order status via PATCH /api/orders/:id/status
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
+      const token = localStorage.getItem('adminToken');
       const res = await fetch(`/api/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ status: newStatus }),
       });
@@ -423,6 +485,7 @@ export default function App() {
                 </div>
               </div>
             ) : null}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
               
               {/* Left columns (Products list - Category filter + categorized grids) */}
@@ -486,6 +549,7 @@ export default function App() {
                               cartQty={cart[product.id] || 0}
                               addToCart={addToCart}
                               removeFromCart={removeFromCart}
+                              onViewDetails={() => openProductModal(product)}
                             />
                           ))}
                         </div>
@@ -500,6 +564,7 @@ export default function App() {
                 <CartModal 
                   isSidebar={true}
                   cart={cart}
+                  settings={settings}
                   products={products}
                   removeFromCart={removeFromCart}
                   addToCart={addToCart}
@@ -579,6 +644,9 @@ export default function App() {
           </div>
         )}
 
+        {/* Success modal after placing order */}
+        <OrderSuccessModal order={lastPlacedOrder} isOpen={!!lastPlacedOrder} onClose={() => setLastPlacedOrder(null)} />
+
         {/* ==================================== */}
         {/* VIEW 2: KITCHEN STAFF MONITOR VIEW   */}
         {/* ==================================== */}
@@ -626,6 +694,23 @@ export default function App() {
           />
         ) : null}
 
+        {activeTab === 'analytics' && !isAdminLoggedIn ? (
+          <AdminLogin onLoginSuccess={handleAdminLogin} />
+        ) : activeTab === 'analytics' && isAdminLoggedIn ? (
+          <Analytics orders={orders} />
+        ) : null}
+
+        {activeTab === 'settings' && !isAdminLoggedIn ? (
+          <AdminLogin onLoginSuccess={handleAdminLogin} />
+        ) : activeTab === 'settings' && isAdminLoggedIn ? (
+          <Settings 
+            onCancel={() => {
+              setActiveTab('customer');
+            }}
+            triggerToast={triggerToast}
+          />
+        ) : null}
+
       </main>
 
       {/* FOOTER */}
@@ -642,6 +727,7 @@ export default function App() {
           isMobile={true}
           isOpen={isMobileCartOpen}
           setIsOpen={setIsMobileCartOpen}
+          settings={settings}
           cart={cart}
           products={products}
           removeFromCart={removeFromCart}
@@ -657,6 +743,14 @@ export default function App() {
           lastPlacedOrder={lastPlacedOrder}
         />
       )}
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        isOpen={isProductModalOpen}
+        onClose={closeProductModal}
+        addToCart={addToCart}
+      />
 
       {/* QR Code Scan Generator Modal */}
       <AnimatePresence>

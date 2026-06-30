@@ -6,6 +6,7 @@ import { initializeDatabase } from './models/index.js';
 import productsRouter from './routes/products.js';
 import ordersRouter from './routes/orders.js';
 import authRouter from './routes/auth.js';
+import settingsRouter from './routes/settings.js';
 import http from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
@@ -50,7 +51,17 @@ async function startServer() {
   // API Routes
   app.use('/api/products', productsRouter);
   app.use('/api/orders', ordersRouter);
+  app.use('/api/settings', settingsRouter);
   app.use('/api/auth', authRouter);
+
+  // Simple JSON error handler for authentication failures and other errors
+  app.use((err, req, res, next) => {
+    if (res.headersSent) return next(err);
+    if (err && (err.status === 401 || err.name === 'UnauthorizedError')) {
+      return res.status(401).json({ error: err.message || 'Unauthorized' });
+    }
+    next(err);
+  });
 
   // Serve static assets in production, or mount Vite middleware in development
   if (process.env.NODE_ENV !== 'production') {

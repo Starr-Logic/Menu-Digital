@@ -19,6 +19,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

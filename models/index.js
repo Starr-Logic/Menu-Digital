@@ -4,6 +4,7 @@ import defineProduct from './Product.js';
 import defineOrder from './Order.js';
 import defineOrderItem from './OrderItem.js';
 import defineAdmin from './Admin.js';
+import defineSetting from './Setting.js';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -46,6 +47,7 @@ const Product = defineProduct(sequelize);
 const Order = defineOrder(sequelize);
 const OrderItem = defineOrderItem(sequelize);
 const Admin = defineAdmin(sequelize);
+const Setting = defineSetting(sequelize);
 
 // Define relations
 Order.hasMany(OrderItem, { as: 'items', foreignKey: 'order_id', onDelete: 'CASCADE' });
@@ -171,5 +173,6 @@ export {
   Order,
   OrderItem,
   Admin,
+  Setting,
   initializeDatabase,
 };

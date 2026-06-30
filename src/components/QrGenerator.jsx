@@ -466,46 +466,8 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
             </div>
           </div>
 
-          {/* Phone Scanning Setup Guide */}
-          <div className="bg-slate-900/60 rounded-3xl border border-amber-500/30 p-6 space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-200 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
-              <Info className="w-4 h-4 text-amber-400" />
-              ការកំណត់ស្កេនទូរស័ព្ទ (Phone Scanning Setup)
-            </h3>
-            <p className="text-[11px] text-slate-300 font-light leading-relaxed">
-              នៅពេលស្កេនជាមួយទូរស័ព្ទដៃផ្ទាល់ តំណភ្ជាប់ (URL) អភិវឌ្ឍន៍ធម្មតា (<code className="text-amber-400 bg-slate-950 px-1 py-0.5 rounded">localhost</code> ឬ preview) គឺ<strong className="text-amber-300">មិនអាចចូលទៅកាន់បានទេ (site can't be reached)</strong> ប្រសិនបើទូរស័ព្ទដៃនោះមិនបានឡុកចូលក្នុងគណនី AI Studio របស់អ្នក។
-            </p>
-            <p className="text-[11px] text-slate-400 font-light leading-relaxed">
-              ដើម្បីអាចស្កេនជាមួយកាមេរ៉ាទូរស័ព្ទដៃបានជោគជ័យ សូមចម្លងតំណភ្ជាប់សាធារណៈ <strong className="text-emerald-400">Shared App URL</strong> យកមកផាស (paste) នៅខាងក្រោម៖
-            </p>
-
-            <div className="space-y-1.5 pt-1">
-              <label className="text-[10px] text-slate-400 font-extrabold uppercase flex justify-between">
-                <span>អាសយដ្ឋានតំណភ្ជាប់ QR Base URL</span>
-                <span className="text-emerald-400 font-mono text-[9px] lowercase">ប្រើ URL សាធារណៈ ឬ LAN</span>
-              </label>
-              <input 
-                type="text"
-                placeholder="ឧទាហរណ៍៖ http://192.168.1.20:3000"
-                value={qrBaseUrl}
-                onChange={(e) => setQrBaseUrl(e.target.value)}
-                className="w-full text-xs px-3 py-2.5 bg-slate-950 text-slate-200 border border-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 placeholder:text-slate-750"
-              />
-              <p className="text-[10px] text-slate-500 leading-relaxed">
-                បើអ្នកចង់ស្កេនពីទូរស័ព្ទដៃ សូមប្រើ URL ដែលទូរស័ព្ទអាចចូលបាន ដូចជា http://192.168.1.20:3000 ឬ URL សាធារណៈ។
-              </p>
-            </div>
-            
-            <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800/80 space-y-1 text-[10px] text-slate-400 font-light">
-              <div className="font-bold text-slate-300 flex items-center gap-1.5 mb-1 text-xs">
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                របៀបធ្វើឱ្យស្កេនដើរនៅលើទូរស័ព្ទ៖
-              </div>
-              <p>១. ចម្លងតំណភ្ជាប់ <strong className="text-slate-200">Shared App URL</strong> ពីប៊ូតុង Share នៃកម្មវិធីរុករក (browser) របស់អ្នក។</p>
-              <p>២. យកមកផាស (Paste) នៅក្នុងប្រអប់បញ្ចូលខាងលើនេះ។</p>
-              <p>៣. សាកល្បងស្កេនកូដ QR ជាមួយកាមេរ៉ាទូរស័ព្ទរបស់អ្នកម្តងទៀត វានឹងនាំទៅកាន់តុដោយជោគជ័យ!</p>
-            </div>
-          </div>
+         
+          
 
           {/* Design Panel: Colors & Sizing */}
           <div className="bg-slate-900/60 rounded-3xl border border-slate-850 p-6 space-y-4">

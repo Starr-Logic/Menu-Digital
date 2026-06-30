@@ -1,12 +1,32 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Minus, Coffee, Utensils } from 'lucide-react';
+import { Plus, Minus, Coffee, Utensils, Info, Globe } from 'lucide-react';
 
-export default function MenuCard({ product, cartQty, addToCart, removeFromCart }) {
-  const { t } = useTranslation();
+export default function MenuCard({ product, cartQty, addToCart, removeFromCart, onViewDetails }) {
+  const { t, i18n } = useTranslation();
 
   const getDisplayCategory = (category) => {
     if (!category) return '';
     return String(category).trim().toLowerCase() === 'drink' ? 'Drinks' : category;
+  };
+
+  const [hasImageError, setHasImageError] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+
+  useEffect(() => {
+    setHasImageError(false);
+    setShowDetails(false);
+  }, [product.image]);
+
+  const handleViewDetails = (event) => {
+    event?.stopPropagation();
+    if (typeof onViewDetails === 'function') return onViewDetails();
+    setShowDetails((prev) => !prev);
+  };
+
+  const handleToggleLanguage = (event) => {
+    event.stopPropagation();
+    i18n.changeLanguage(i18n.language === 'km' ? 'en' : 'km');
   };
 
   return (
@@ -15,26 +35,67 @@ export default function MenuCard({ product, cartQty, addToCart, removeFromCart }
       className="bg-slate-900/60 rounded-3xl border border-slate-800/80 hover:border-slate-700/80 shadow-md hover:shadow-xl hover:bg-slate-900/80 transition-all duration-300 overflow-hidden flex flex-col group w-full min-w-0"
     >
       {/* Product Image */}
-      <div className="aspect-video w-full overflow-hidden relative bg-slate-950 border-b border-slate-800/50" id={`menu-image-container-${product.id}`}>
-        {product.image ? (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleViewDetails}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleViewDetails(event);
+          }
+        }}
+        className="menu-card-image-link group relative aspect-video w-full overflow-hidden bg-slate-950 border-b border-slate-800/50 cursor-pointer"
+        id={`menu-image-container-${product.id}`}
+        aria-label={t('view_details', 'View details')}
+      >
+        {product.image && !hasImageError ? (
           <img 
             src={product.image} 
             alt={product.name}
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={() => setHasImageError(true)}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-2.5 bg-slate-900/80">
-            {product.category.toLowerCase().includes('drink') ? (
-              <Coffee className="w-10 h-10 text-slate-800 group-hover:scale-110 transition-transform duration-300" />
+          <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-3 bg-slate-900/80">
+            {product.category?.toLowerCase().includes('drink') ? (
+              <Coffee className="w-12 h-12 text-amber-300" />
             ) : (
-              <Utensils className="w-10 h-10 text-slate-800 group-hover:scale-110 transition-transform duration-300" />
+              <Utensils className="w-12 h-12 text-emerald-300" />
             )}
-            <span className="text-[9px] font-bold text-slate-700 tracking-widest uppercase">{t('delicious_choice', 'Delicious choice')}</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-200">
+              {t('tap_for_details', 'Tap for details')}
+            </span>
           </div>
         )}
-        <span className="absolute top-3 left-3 px-2.5 py-1 bg-slate-950/90 text-amber-400 border border-slate-800/80 text-[10px] font-black uppercase tracking-wider rounded-full shadow-xs">
+        <span className="absolute top-3 left-3 px-3 py-1 bg-slate-950/95 text-amber-300 border border-slate-800/80 text-[10px] font-black uppercase tracking-wider rounded-full shadow-sm">
           {getDisplayCategory(product.category)}
+        </span>
+        <button
+          type="button"
+          onClick={handleToggleLanguage}
+          className="absolute top-3 right-3 inline-flex items-center justify-center rounded-full bg-slate-950/95 p-2 text-amber-300 border border-slate-800/80 shadow-sm transition duration-200 ease-out hover:bg-slate-900 hover:text-amber-200"
+          aria-label={t('change_language', 'Change language')}
+          tabIndex={0}
+        >
+          <Globe className="w-4 h-4" />
+        </button>
+        <span
+          onClick={handleViewDetails}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              handleViewDetails(event);
+            }
+          }}
+          className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-slate-950/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-100 border border-slate-800/80 shadow-sm transition duration-200 ease-out opacity-90 hover:opacity-100 hover:border-amber-400 hover:text-amber-300 cursor-pointer menu-card-detail-link"
+          aria-label={t('view_details', 'View details')}
+        >
+          <Info className="w-3 h-3 text-amber-400" />
+          {t('view_details', 'View details')}
         </span>
       </div>
 
@@ -44,9 +105,21 @@ export default function MenuCard({ product, cartQty, addToCart, removeFromCart }
           <h4 className="font-extrabold text-slate-100 text-sm sm:text-base leading-snug group-hover:text-amber-400 transition-colors">
             {product.name}
           </h4>
-          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed font-light">
+          <p className={`text-xs leading-relaxed font-light text-slate-500 ${showDetails ? '' : 'line-clamp-2'}`}>
             {product.description}
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof onViewDetails === 'function') return onViewDetails();
+              setShowDetails(prev => !prev);
+            }}
+            className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.26em] text-amber-400 hover:text-amber-300 transition-colors"
+            id={`btn-view-details-${product.id}`}
+          >
+            <Info className="w-3.5 h-3.5" />
+            {showDetails ? 'Hide details' : 'View details'}
+          </button>
         </div>
 
         {/* Pricing and Action control */}

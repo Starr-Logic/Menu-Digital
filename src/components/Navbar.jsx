@@ -1,13 +1,45 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChefHat, Globe, Utensils, Layers, QrCode, Plus, LogOut, LogIn } from 'lucide-react';
+import { ChefHat, Menu, X, LogOut, LogIn, HelpCircle, Lock, Zap, Users, QrCode, Package, Moon, Sun, Globe, ClipboardList, BarChart3, Settings, Mail } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrders, triggerToast, isAdminLoggedIn, adminUser, onLogout }) {
   const { t, i18n } = useTranslation();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('themeMode') !== 'light';
+  });
+
+  useEffect(() => {
+    const theme = isDarkMode ? 'dark' : 'light';
+    if (typeof document !== 'undefined') {
+      document.documentElement.dataset.theme = theme;
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('themeMode', theme);
+    }
+  }, [isDarkMode]);
+
+  const openHelp = () => {
+    window.location.href = 'mailto:contact@biteqr.com';
+  };
+
+  const openContact = () => {
+    window.location.href = 'tel:+85523123456';
+  };
+
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+    setDropdownOpen(false);
+    if (tab === 'kitchen') {
+      fetchOrders();
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 shadow-xl" id="main-header">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center py-4 md:py-0 md:h-16 gap-4 md:gap-0 min-w-0">
+        <div className="flex justify-between items-center py-4 h-16">
           
           {/* Logo and Branding */}
           <div className="flex items-center gap-3 min-w-0" id="brand-container">
@@ -20,124 +52,256 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
             </div>
           </div>
 
-          {/* Controls Side */}
-          <div className="flex flex-wrap items-center justify-end gap-3 flex-1 min-w-0" id="controls-container">
-            <div className="flex items-center gap-2 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-1.5 shadow-inner min-w-0" id="nav-toolbar">
-              {/* Language Switcher Selector */}
-              <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/70 px-2.5 py-2" id="lang-switcher-wrapper">
-                <Globe className="w-3.5 h-3.5 text-slate-400" />
-                <select
-                  id="language-switcher"
-                  value={i18n.language}
-                  onChange={(e) => {
-                    const newLang = e.target.value;
-                    i18n.changeLanguage(newLang);
-                    triggerToast(newLang === 'km' ? 'បានប្តូរភាសាទៅជាភាសាខ្មែរ' : 'Language switched to English', 'success');
-                  }}
-                  className="bg-transparent text-[11px] text-slate-200 font-extrabold focus:outline-none cursor-pointer pr-1"
+          {/* DESKTOP - Show items in one row */}
+          <div className="hidden md:flex items-center gap-2 flex-1 justify-end">
+            {!isAdminLoggedIn ? (
+              // CUSTOMER MENU - DESKTOP
+              <>
+                <button
+                  onClick={() => openHelp()}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
                 >
-                  <option value="en" className="bg-slate-950 text-slate-200">EN</option>
-                  <option value="km" className="bg-slate-950 text-slate-200">KH</option>
-                </select>
-              </div>
-
-              {/* Mode Switcher */}
-              <div className="flex flex-wrap items-center justify-center gap-1.5 overflow-x-auto whitespace-nowrap" id="nav-tabs-wrapper">
-                <button 
-                  id="btn-nav-customer"
-                  onClick={() => setActiveTab('customer')}
-                  className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-[10px] font-black tracking-[0.2em] uppercase transition-all ${
-                    activeTab === 'customer' 
-                      ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/15' 
-                      : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200'
-                  }`}
-                >
-                  <Utensils className="w-4 h-4" />
-                  {t('customer_menu')}
+                  <HelpCircle className="w-4 h-4" />
+                  Help
                 </button>
-
-                {!isAdminLoggedIn && (
-                  <button
-                    id="btn-admin-login"
-                    onClick={() => setActiveTab('kitchen')}
-                    className="flex items-center justify-center h-9 w-9 rounded-xl border border-slate-800 bg-slate-950/70 text-slate-400 transition-all hover:border-amber-500/30 hover:text-amber-400 shrink-0"
-                    title={t('admin_login')}
-                  >
-                    <LogIn className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {isAdminLoggedIn && (
-              <div className="flex flex-wrap items-center gap-2">
-                <button 
-                  id="btn-nav-kitchen"
-                  onClick={() => {
-                    setActiveTab('kitchen');
-                    fetchOrders();
-                  }}
-                  className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-[10px] font-black tracking-[0.2em] uppercase transition-all relative ${
-                    activeTab === 'kitchen' 
-                      ? 'bg-indigo-600 text-slate-100' 
-                      : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200'
-                  }`}
+                <button
+                  onClick={() => openContact()}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
                 >
-                  <Layers className="w-4 h-4" />
-                  {t('kitchen_deck')}
-                  {statsPending > 0 && (
-                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[8px] font-black bg-rose-500 text-white rounded-full animate-bounce">
-                      {statsPending}
-                    </span>
-                  )}
+                  <Mail className="w-4 h-4" />
+                  Contact
                 </button>
-                
-                <button 
-                  id="btn-nav-qr"
-                  onClick={() => setActiveTab('qr-generator')}
-                  className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-[10px] font-black tracking-[0.2em] uppercase transition-all relative ${
-                    activeTab === 'qr-generator' 
-                      ? 'bg-emerald-600 text-slate-100' 
-                      : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200'
-                  }`}
+                <button
+                  onClick={() => i18n.changeLanguage(i18n.language === 'km' ? 'en' : 'km')}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
+                >
+                  <Globe className="w-4 h-4" />
+                  {i18n.language === 'km' ? 'English' : 'ខ្មែរ'}
+                </button>
+                <button
+                  onClick={() => handleTabClick('kitchen')}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors ml-2 border-l border-slate-700 pl-4"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Login
+                </button>
+              </>
+            ) : (
+              // ADMIN MENU - DESKTOP
+              <>
+                <button
+                  onClick={() => handleTabClick('kitchen')}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
+                >
+                  <ClipboardList className="w-4 h-4" />
+                  Orders
+                </button>
+                <button
+                  onClick={() => handleTabClick('customer')}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
+                >
+                  <Users className="w-4 h-4" />
+                  Customers
+                </button>
+                <button
+                  onClick={() => handleTabClick('qr-generator')}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
                 >
                   <QrCode className="w-4 h-4" />
-                  {t('qr_hub')}
+                  QR
                 </button>
-                
-                <button 
-                  id="btn-nav-add-product"
-                  onClick={() => setActiveTab('add-product')}
-                  className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-[10px] font-black tracking-[0.2em] uppercase transition-all relative ${
-                    activeTab === 'add-product' 
-                      ? 'bg-teal-600 text-slate-100' 
-                      : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200'
-                  }`}
-                >
-                  <Plus className="w-4 h-4" />
-                  {t('add_new_product')}
-                </button>
-              </div>
-            )}
-
-            {/* Admin User Info & Logout */}
-            {isAdminLoggedIn && adminUser && (
-              <div className="flex items-center gap-3 pl-4 border-l border-slate-800">
-                <div className="text-right">
-                  <p className="text-xs font-bold text-slate-200">{adminUser.username}</p>
-                  <p className="text-[10px] text-slate-500">Admin</p>
-                </div>
                 <button
-                  onClick={onLogout}
-                  className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                  title="Logout"
+                  onClick={() => handleTabClick('add-product')}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
+                >
+                  <Package className="w-4 h-4" />
+                  Products
+                </button>
+                <button
+                  onClick={() => handleTabClick('analytics')}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Analytics
+                </button>
+                <button
+                  onClick={() => i18n.changeLanguage(i18n.language === 'km' ? 'en' : 'km')}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
+                >
+                  <Globe className="w-4 h-4" />
+                  {i18n.language === 'km' ? 'English' : 'ខ្មែរ'}
+                </button>
+                <button
+                  onClick={() => handleTabClick('settings')}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
+                >
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </button>
+                <button
+                  onClick={() => {
+                    onLogout();
+                    setDropdownOpen(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors ml-2 border-l border-slate-700 pl-4"
                 >
                   <LogOut className="w-4 h-4" />
+                  Logout
                 </button>
-              </div>
+              </>
             )}
           </div>
 
+          {/* MOBILE - Show menu icon */}
+          <div className="relative md:hidden">
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="p-3 text-slate-200 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all"
+              title="Menu"
+            >
+              {dropdownOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
+            </button>
+
+            {/* Dropdown Menu - Mobile */}
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-700 bg-slate-900 shadow-xl overflow-hidden z-50">
+                {!isAdminLoggedIn ? (
+                  // CUSTOMER MENU - MOBILE
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsDarkMode(!isDarkMode);
+                        setDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors"
+                    >
+                      {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                      {isDarkMode ? 'Light Mode' : 'Night Mode'}
+                    </button>
+                
+                
+                    <button
+                      onClick={() => {
+                        openHelp();
+                        setDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                      Help and support
+                    </button>
+                    <button
+                      onClick={() => {
+                        openContact();
+                        setDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                    >
+                      <Mail className="w-4 h-4" />
+                      Contact
+                    </button>
+                    <button
+                      onClick={() => {
+                        i18n.changeLanguage(i18n.language === 'km' ? 'en' : 'km');
+                        setDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                    >
+                      <Globe className="w-4 h-4" />
+                      {i18n.language === 'km' ? 'English' : 'ខ្មែរ'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleTabClick('kitchen');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-amber-400 hover:bg-amber-500/10 transition-colors border-t border-slate-700"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Login
+                    </button>
+                  </>
+                ) : (
+                  // ADMIN MENU - MOBILE
+                  <>
+                    <button
+                      onClick={() => {
+                        handleTabClick('kitchen');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors"
+                    >
+                      <ClipboardList className="w-4 h-4" />
+                      Orders
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleTabClick('customer');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                    >
+                      <Users className="w-4 h-4" />
+                      Customers
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleTabClick('qr-generator');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      QR
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleTabClick('add-product');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                    >
+                      <Package className="w-4 h-4" />
+                      Products
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleTabClick('analytics');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      Analytics
+                    </button>
+                    <button
+                      onClick={() => {
+                        i18n.changeLanguage(i18n.language === 'km' ? 'en' : 'km');
+                        setDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                    >
+                      <Globe className="w-4 h-4" />
+                      {i18n.language === 'km' ? 'English' : 'ខ្មែរ'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleTabClick('settings');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </button>
+                    <button
+                      onClick={() => {
+                        onLogout();
+                        setDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-400 hover:bg-red-500/20 transition-colors border-t border-slate-700"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

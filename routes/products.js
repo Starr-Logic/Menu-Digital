@@ -5,6 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Product } from '../models/index.js';
 
+import { verifyToken } from './auth.js';
+
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,7 +65,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/products : Create a product and optionally save an uploaded image
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   upload.single('image')(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message || 'Failed to upload image' });
@@ -93,7 +95,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/products/:id : Update a product and optionally replace its image
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, async (req, res) => {
   upload.single('image')(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message || 'Failed to upload image' });
@@ -136,7 +138,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/products/:id : Remove a product and its stored image
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const product = await Product.findByPk(id);

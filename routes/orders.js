@@ -1,10 +1,11 @@
 import express from 'express';
-import { sequelize, Order, OrderItem, Product } from '../models/index.js';
+import { sequelize, Order, OrderItem, Product, Setting } from '../models/index.js';
+import { verifyToken } from './auth.js';
 
 const router = express.Router();
 
 // GET /api/orders : Fetch all orders (with details of items and products)
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const orders = await Order.findAll({
       include: [
@@ -73,6 +74,22 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Enforce minimum order value from settings (server-side)
+    try {
+      const settings = await Setting.findOne();
+      if (settings && settings.minOrderValue) {
+        const minStr = settings.minOrderValue.toString();
+        const numeric = parseFloat(minStr.replace(/[^0-9.]/g, '')) || 0;
+        if (numeric > 0 && total_price < numeric) {
+          await transaction.rollback();
+          return res.status(400).json({ error: `Minimum order amount is ${settings.minOrderValue}` });
+        }
+      }
+    } catch (err) {
+      console.error('Error checking settings for min order:', err);
+      // proceed without blocking if settings check fails
+    }
+
     // Create the order
     const order = await Order.create({
       table_number,
@@ -124,7 +141,7 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH /api/orders/:id/status : Update status of an order
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;

@@ -70,12 +70,23 @@ export default function AdminDashboard({ onNewOrderToast }) {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/orders`);
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/orders`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
       if (!res.ok) throw new Error('Failed to fetch orders');
       const data = await res.json();
       setOrders(data);
     } catch (err) {
       console.error('Error fetching orders:', err);
+      if (err.message && err.message.toLowerCase().includes('unauthorized')) {
+        alert('Admin authentication required. Please log in.');
+        // Optionally reload to show login view
+        window.location.reload();
+        return;
+      }
     } finally {
       setLoading(false);
     }
@@ -149,13 +160,20 @@ export default function AdminDashboard({ onNewOrderToast }) {
   // Handler to update status via PATCH
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
+      const token = localStorage.getItem('adminToken');
       const res = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ status: newStatus }),
       });
+
+      if (res.status === 401) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Unauthorized');
+      }
 
       if (!res.ok) {
         const errData = await res.json();

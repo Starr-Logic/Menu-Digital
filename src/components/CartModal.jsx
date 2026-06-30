@@ -26,6 +26,7 @@ export default function CartModal({
   isPlacingOrder,
   selectedTable,
   lastPlacedOrder,
+  settings,
   // layout triggers
   isSidebar = false,
   isMobile = false,
@@ -36,6 +37,16 @@ export default function CartModal({
 
   const cartItemCount = getCartItemCount();
   const cartTotal = getCartTotal();
+  // Parse minimum order from settings (string like "$5.00")
+  let minOrderRaw = null;
+  let minOrderNumeric = 0;
+  try {
+    minOrderRaw = settings && settings.minOrderValue ? settings.minOrderValue.toString() : null;
+    minOrderNumeric = minOrderRaw ? parseFloat(minOrderRaw.replace(/[^0-9.]/g, '')) || 0 : 0;
+  } catch (err) {
+    minOrderNumeric = 0;
+  }
+  const belowMin = minOrderNumeric > 0 && cartTotal < minOrderNumeric;
 
   // Unified Cart Panel Inner Content
   const renderCartPanelContent = () => (
@@ -141,7 +152,7 @@ export default function CartModal({
           <button
             id="btn-confirm-checkout"
             onClick={handlePlaceOrder}
-            disabled={isPlacingOrder}
+            disabled={isPlacingOrder || belowMin}
             className="w-full flex items-center justify-center gap-2 py-3.5 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 text-xs font-black rounded-xl shadow-lg shadow-amber-500/10 transition-colors cursor-pointer"
           >
             {isPlacingOrder ? (
@@ -155,6 +166,13 @@ export default function CartModal({
               </>
             )}
           </button>
+
+          {/* Minimum order notice */}
+          {minOrderNumeric > 0 && belowMin && (
+            <div className="mt-2 text-xs text-rose-300 bg-rose-950/10 border border-rose-800 rounded-xl p-2">
+              <strong className="font-black">Minimum order:</strong> {minOrderRaw}. Add <span className="font-bold">${(minOrderNumeric - cartTotal).toFixed(2)}</span> more to proceed.
+            </div>
+          )}
         </>
       )}
 

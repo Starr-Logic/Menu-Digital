@@ -12,7 +12,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import QrGenerator from './components/QrGenerator';
 import AdminDashboard from './components/AdminDashboard';
+import AdminLogin from './components/AdminLogin';
 import AddProduct from './components/AddProduct';
+import Analytics from './components/Analytics';
+import Settings from './components/Settings';
 import Navbar from './components/Navbar';
 import MenuCard from './components/MenuCard';
 import CartModal from './components/CartModal';
@@ -260,7 +263,7 @@ export default function App() {
   const groupedProducts = getGroupedProducts();
 
   return (
-    <div id="app-root" className="min-h-screen bg-slate-950 text-slate-100 antialiased font-sans pb-24 lg:pb-8">
+    <div id="app-root" className="min-h-screen bg-slate-950 text-slate-100 antialiased font-sans pb-24 lg:pb-8 lg:grid lg:grid-cols-[96px_minmax(0,1fr)] lg:gap-6">
       
       {/* Dynamic Toast Alerts */}
       <AnimatePresence>
@@ -285,13 +288,12 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Global Sticky Navigation Header */}
+      {/* Global Sidebar Navigation */}
       <Navbar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         statsPending={stats.pending} 
         fetchOrders={fetchOrders} 
-        triggerToast={triggerToast} 
       />
 
       {/* Main Container */}
@@ -558,6 +560,18 @@ export default function App() {
               triggerToast(`Added ${newProduct.name} to menu!`, 'success');
               setActiveTab('customer');
             }}
+            onCancel={() => {
+              setActiveTab('customer');
+            }}
+          />
+        )}
+
+        {activeTab === 'analytics' && (
+          <Analytics orders={orders} />
+        )}
+
+        {activeTab === 'settings' && (
+          <Settings 
             onCancel={() => {
               setActiveTab('customer');
             }}
