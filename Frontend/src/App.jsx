@@ -37,6 +37,7 @@ export default function App() {
     isMobileCartOpen,
     setIsMobileCartOpen,
     toast,
+    triggerToast,
   } = useAppContext();
 
   const isCustomerRoute = location.pathname === '/' || location.pathname === '/orders';
@@ -54,7 +55,7 @@ export default function App() {
           <Route path="/orders" element={<CustomerOrders />} />
 
           {/* Admin Routes */}
-          <Route path="/admin" element={!isAdminLoggedIn ? <AdminLogin onLoginSuccess={handleAdminLogin} /> : <AdminDashboard />} />
+          <Route path="/admin" element={!isAdminLoggedIn ? <AdminLogin onLoginSuccess={handleAdminLogin} /> : <AdminDashboard onNewOrderToast={triggerToast} />} />
           <Route path="/admin/qr" element={!isAdminLoggedIn ? <AdminLogin onLoginSuccess={handleAdminLogin} /> : <QrGenerator onNavigateToMenu={() => { }} />} />
           <Route path="/admin/products" element={!isAdminLoggedIn ? <AdminLogin onLoginSuccess={handleAdminLogin} /> : <AddProduct onCancel={() => { }} />} />
           <Route path="/admin/analytics" element={!isAdminLoggedIn ? <AdminLogin onLoginSuccess={handleAdminLogin} /> : <Analytics />} />

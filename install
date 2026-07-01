@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+
+echo "====================================="
+echo "  BiteQR (Menu Digital) Setup        "
+echo "====================================="
+
+echo "[1/4] Setting up Backend..."
+cd Backend
+npm install
+cd ..
+
+echo "[2/4] Setting up Frontend..."
+cd Frontend
+npm install
+cd ..
+
+echo "[3/4] Configuring Environment Variables..."
+if [ ! -f .env ]; then
+    cp .env.example .env
+    echo "Created .env from .env.example"
+else
+    echo ".env already exists, skipping..."
+fi
+
+echo "[4/4] Installation Complete!"
+echo "====================================="
+echo "To start the development server:"
+echo "Run: ./scripts/linux/dev.sh"
+echo "====================================="
