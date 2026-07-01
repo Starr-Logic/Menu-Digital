@@ -1,8 +1,10 @@
 import { Settings as SettingsIcon, Store, Clock, MapPin, Phone, Mail, Save, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { API_BASE_URL } from '../config';
+import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../../config';
 
 export default function Settings({ onCancel, triggerToast }) {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState({
     storeName: 'BiteQR Restaurant',
     storePhone: '+855 23 123 456',
@@ -87,9 +89,9 @@ export default function Settings({ onCancel, triggerToast }) {
         <div>
           <h1 className="text-3xl font-black text-slate-100 flex items-center gap-3">
             <SettingsIcon className="w-8 h-8 text-teal-500" />
-            Store Settings
+            {t('restaurant_settings')}
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Manage your restaurant configuration</p>
+          <p className="text-slate-400 text-sm mt-1">{t('settings_desc')}</p>
         </div>
         {onCancel && (
           <button
@@ -117,14 +119,14 @@ export default function Settings({ onCancel, triggerToast }) {
       <div className="bg-slate-900/60 rounded-3xl border border-slate-800 p-8 space-y-6">
         <div className="flex items-center gap-3 pb-4 border-b border-slate-800">
           <Store className="w-5 h-5 text-amber-500" />
-          <h2 className="text-lg font-black text-slate-100">Store Information</h2>
+          <h2 className="text-lg font-black text-slate-100">{t('store_information')}</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Store Name */}
           <div className="space-y-2">
             <label className="text-xs font-black uppercase text-slate-400 tracking-wider">
-              Store Name
+              {t('store_name')}
             </label>
             <input
               type="text"
@@ -138,7 +140,7 @@ export default function Settings({ onCancel, triggerToast }) {
           {/* Currency */}
           <div className="space-y-2">
             <label className="text-xs font-black uppercase text-slate-400 tracking-wider">
-              Currency
+              {t('currency')}
             </label>
             <select
               name="currency"
@@ -187,7 +189,7 @@ export default function Settings({ onCancel, triggerToast }) {
           <div className="space-y-2 md:col-span-2">
             <label className="text-xs font-black uppercase text-slate-400 tracking-wider">
               <MapPin className="inline w-3 h-3 mr-1" />
-              Store Location
+              {t('address')}
             </label>
             <input
               type="text"
@@ -204,14 +206,14 @@ export default function Settings({ onCancel, triggerToast }) {
       <div className="bg-slate-900/60 rounded-3xl border border-slate-800 p-8 space-y-6">
         <div className="flex items-center gap-3 pb-4 border-b border-slate-800">
           <Clock className="w-5 h-5 text-indigo-500" />
-          <h2 className="text-lg font-black text-slate-100">Operating Hours</h2>
+          <h2 className="text-lg font-black text-slate-100">{t('operating_hours')}</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Business Hours */}
           <div className="space-y-2">
             <label className="text-xs font-black uppercase text-slate-400 tracking-wider">
-              Business Hours
+              {t('operating_hours')}
             </label>
             <input
               type="text"
@@ -226,7 +228,7 @@ export default function Settings({ onCancel, triggerToast }) {
           {/* Min Order Value */}
           <div className="space-y-2">
             <label className="text-xs font-black uppercase text-slate-400 tracking-wider">
-              Minimum Order Value
+              {t('minimum_order_value')}
             </label>
             <input
               type="text"
@@ -268,7 +270,7 @@ export default function Settings({ onCancel, triggerToast }) {
       {/* Save Button */}
       <div className="flex gap-3 justify-between items-center pt-6 border-t border-slate-800">
         {isLoading && (
-          <div className="text-sm text-slate-500">Loading settings from backend...</div>
+          <div className="text-sm text-slate-500">{t('loading')}</div>
         )}
         <div className="flex gap-3 justify-end">
         {onCancel && (
@@ -276,7 +278,7 @@ export default function Settings({ onCancel, triggerToast }) {
             onClick={onCancel}
             className="px-6 py-3 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700 font-bold text-sm transition-all"
           >
-            Cancel
+            {t('cancel')}
           </button>
         )}
         <button
@@ -285,7 +287,7 @@ export default function Settings({ onCancel, triggerToast }) {
           className="flex items-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-600/50 text-white font-bold text-sm rounded-xl transition-all"
         >
           <Save className="w-4 h-4" />
-          {isSaving ? 'Saving...' : 'Save Settings'}
+          {isSaving ? t('saving') : t('save_settings')}
         </button>
         </div>
       </div>

@@ -15,14 +15,21 @@ import {
   Layers,
   LayoutGrid
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
+  const { t } = useTranslation();
   const [singleTable, setSingleTable] = useState('');
   const [rangeStart, setRangeStart] = useState(1);
   const [rangeEnd, setRangeEnd] = useState(10);
   const [qrSize, setQrSize] = useState(200);
   const [fgColor, setFgColor] = useState('#000000');
   const [bgColor, setBgColor] = useState('#ffffff');
+
+  const localizeTable = (tableName) => {
+    if (!tableName || typeof tableName !== 'string') return tableName;
+    return tableName.replace(/Table/gi, t('table'));
+  };
   const [tablesList, setTablesList] = useState([
     { id: 'Table-1', name: 'Table 1' },
     { id: 'Table-2', name: 'Table 2' },
@@ -208,14 +215,14 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
         <body>
           <div class="flyer-card">
             <div class="header-badge">BiteQR ordering</div>
-            <h1>SCAN & ORDER</h1>
-            <p class="subtitle">Quick menu. Direct table routing.</p>
+            <h1>${t('scan_and_order')}</h1>
+            <p class="subtitle">${t('quick_menu_routing')}</p>
             <div class="qr-container">
               <img src="${imgData}" width="220" height="220" alt="QR Code" />
             </div>
-            <div class="table-label">${table.name.toUpperCase()}</div>
-            <p class="instructions">Open your smartphone camera & scan this code to browse our menu and submit your table order instantly!</p>
-            <div class="footer-line">Powered by BiteQR Systems</div>
+            <div class="table-label">${localizeTable(table.name).toUpperCase()}</div>
+            <p class="instructions">${t('scan_instructions')}</p>
+            <div class="footer-line">${t('powered_by')}</div>
           </div>
           <script>
             window.onload = function() {
@@ -243,14 +250,14 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
         <div class="print-page">
           <div class="flyer-card">
             <div class="header-badge">BiteQR ordering</div>
-            <h1>SCAN & ORDER</h1>
-            <p class="subtitle">Quick menu. Direct table routing.</p>
+            <h1>${t('scan_and_order')}</h1>
+            <p class="subtitle">${t('quick_menu_routing')}</p>
             <div class="qr-container">
               <img src="${imgData}" width="220" height="220" alt="QR Code" />
             </div>
-            <div class="table-label">${table.name.toUpperCase()}</div>
-            <p class="instructions">Open your smartphone camera & scan this code to browse our menu and submit your table order instantly!</p>
-            <div class="footer-line">Powered by BiteQR Systems</div>
+            <div class="table-label">${localizeTable(table.name).toUpperCase()}</div>
+            <p class="instructions">${t('scan_instructions')}</p>
+            <div class="footer-line">${t('powered_by')}</div>
           </div>
         </div>
       `;
@@ -368,10 +375,10 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
               Dynamic Table Setup & QR Hub
             </div>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-none text-slate-100">
-              Printable QR Code Generator
+              {t('qr_code_generator')}
             </h2>
             <p className="text-slate-400 text-xs sm:text-sm max-w-xl font-light leading-relaxed">
-              Design, customize, and output printable table stickers instantly. Diners scanning these custom QR codes will automatically connect directly to the corresponding table ordering session.
+              {t('qr_desc')}
             </p>
           </div>
 
@@ -382,7 +389,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
                 className="flex items-center gap-2 px-4.5 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black rounded-xl shadow-lg shadow-amber-500/10 transition-colors"
               >
                 <Printer className="w-4 h-4" />
-                Print All Flyer Cards ({tablesList.length})
+                {t('print_all_qrs')} ({tablesList.length})
               </button>
             )}
           </div>
@@ -399,15 +406,12 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
           <div className="bg-slate-900/60 rounded-3xl border border-slate-850 p-6 space-y-4">
             <h3 className="font-extrabold text-sm text-slate-200 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
               <LayoutGrid className="w-4 h-4 text-amber-400" />
-              Generate Range Loop
+              {t('table_range')}
             </h3>
-            <p className="text-[11px] text-slate-500 font-light leading-relaxed">
-              Quickly clear and fill the board with a sequential series of dine-in tables.
-            </p>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               <div className="space-y-1.5">
-                <label className="text-[10px] text-slate-400 font-extrabold uppercase">Start Number</label>
+                <label className="text-[10px] text-slate-400 font-extrabold uppercase">{t('start_number')}</label>
                 <input 
                   type="number"
                   min="1"
@@ -417,7 +421,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] text-slate-400 font-extrabold uppercase">End Number</label>
+                <label className="text-[10px] text-slate-400 font-extrabold uppercase">{t('end_number')}</label>
                 <input 
                   type="number"
                   min="1"
@@ -432,7 +436,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
               onClick={handleGenerateRange}
               className="w-full py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-850 hover:border-slate-700 text-slate-200 text-xs font-black rounded-xl transition-all"
             >
-              Populate Range Loop (Table {rangeStart} to {rangeEnd})
+              {t('populate_range')} ({localizeTable('Table ' + rangeStart)} - {rangeEnd})
             </button>
           </div>
 
@@ -440,14 +444,14 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
           <div className="bg-slate-900/60 rounded-3xl border border-slate-850 p-6 space-y-4">
             <h3 className="font-extrabold text-sm text-slate-200 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
               <Plus className="w-4 h-4 text-emerald-400" />
-              Add Custom Table
+              {t('add_new_product')}
             </h3>
             <p className="text-[11px] text-slate-500 font-light leading-relaxed">
-              Add individual unique table names, VIP rooms, bar stools, or specific sections.
+              {t('identifier_help')}
             </p>
 
             <div className="space-y-1.5 pt-1">
-              <label className="text-[10px] text-slate-400 font-extrabold uppercase">Identifier Name</label>
+              <label className="text-[10px] text-slate-400 font-extrabold uppercase">{t('identifier_name')}</label>
               <div className="flex gap-2">
                 <input 
                   type="text"
@@ -473,13 +477,13 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
           <div className="bg-slate-900/60 rounded-3xl border border-slate-850 p-6 space-y-4">
             <h3 className="font-extrabold text-sm text-slate-200 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
               <Sparkles className="w-4 h-4 text-indigo-400" />
-              QR Design Aesthetics
+              {t('qr_styling')}
             </h3>
 
             <div className="space-y-3.5 pt-1">
               <div className="space-y-1.5">
                 <div className="flex justify-between text-[10px] uppercase font-extrabold text-slate-400">
-                  <span>QR Code Stamp Size</span>
+                  <span>{t('qr_code_size')}</span>
                   <span>{qrSize}px</span>
                 </div>
                 <input 
@@ -495,7 +499,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-slate-400 font-extrabold uppercase">Fill Color</label>
+                  <label className="text-[10px] text-slate-400 font-extrabold uppercase">{t('qr_color')}</label>
                   <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
                     <input 
                       type="color"
@@ -508,7 +512,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-slate-400 font-extrabold uppercase">Base Color</label>
+                  <label className="text-[10px] text-slate-400 font-extrabold uppercase">{t('base_color')}</label>
                   <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
                     <input 
                       type="color"
@@ -532,10 +536,10 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
               <div>
                 <h3 className="font-extrabold text-slate-100 text-base sm:text-lg flex items-center gap-2">
                   <QrCode className="w-5 h-5 text-amber-500" />
-                  Active QR Sticker Board ({tablesList.length})
+                  {t('active_qr_board')} ({tablesList.length})
                 </h3>
                 <p className="text-slate-500 text-xs mt-0.5">
-                  Click on table identifiers to preview table ordering menu, download individual assets, or print flyer cards.
+                  {t('qr_board_subtitle')}
                 </p>
               </div>
 
@@ -545,7 +549,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
                   className="flex items-center gap-1 bg-slate-950 hover:bg-rose-950/20 border border-slate-800 hover:border-rose-950/40 text-slate-400 hover:text-rose-400 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  Clear Board
+                  {t('clear_board')}
                 </button>
               )}
             </div>
@@ -556,8 +560,8 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
                   <QrCode className="w-6 h-6" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-slate-300 text-sm font-bold">QR Sticker Board is empty</p>
-                  <p className="text-xs text-slate-500 max-w-70 mx-auto">Use the range loop generator on the left to quickly populate table QR assets!</p>
+                  <p className="text-slate-300 text-sm font-bold">{t('qr_board_empty')}</p>
+                  <p className="text-xs text-slate-500 max-w-70 mx-auto">{t('qr_board_help')}</p>
                 </div>
               </div>
             ) : (
@@ -572,7 +576,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
                       {/* Sticker layout */}
                       <div className="flex flex-col items-center justify-center text-center space-y-4">
                         <span className="px-3 py-1 bg-slate-900 border border-slate-800 text-amber-400 font-extrabold uppercase tracking-widest text-[10px] rounded-full">
-                          {table.name}
+                          {localizeTable(table.name)}
                         </span>
 
                         {/* Hidden dynamic canvas used for downloading/printing */}
@@ -603,7 +607,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
                           className="flex items-center justify-center gap-1.5 py-2 px-2 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-bold rounded-xl transition-all"
                         >
                           <Download className="w-3.5 h-3.5" />
-                          PNG Asset
+                          {t('png_asset')}
                         </button>
 
                         <button
@@ -611,7 +615,7 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
                           className="flex items-center justify-center gap-1.5 py-2 px-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black rounded-xl transition-all shadow-md"
                         >
                           <Printer className="w-3.5 h-3.5" />
-                          Print Flyer
+                          {t('print_flyer')}
                         </button>
                       </div>
 
@@ -624,12 +628,12 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
                           {copiedId === table.id ? (
                             <>
                               <Check className="w-3 h-3 text-emerald-400" />
-                              <span className="text-emerald-400 font-extrabold">Link copied!</span>
+                              <span className="text-emerald-400 font-extrabold">{t('link_copied')}</span>
                             </>
                           ) : (
                             <>
                               <Copy className="w-3 h-3 text-slate-500" />
-                              <span>Copy menu URL</span>
+                              <span>{t('copy_menu_url')}</span>
                             </>
                           )}
                         </button>
@@ -642,13 +646,13 @@ export default function QrGenerator({ onSelectTable, onNavigateToMenu }) {
                             }}
                             className="text-indigo-400 hover:text-indigo-300 transition-colors hover:underline"
                           >
-                            Simulate order
+                            {t('simulate_order')}
                           </button>
                           <button
                             onClick={() => handleRemoveTable(table.id)}
                             className="text-slate-600 hover:text-rose-400 transition-colors"
                           >
-                            Remove
+                            {t('remove')}
                           </button>
                         </div>
                       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Plus,
   Sparkles,
@@ -14,7 +15,7 @@ import {
   Pencil,
   Trash2
 } from 'lucide-react';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from '../../config';
 
 const PRESET_IMAGES = [];
 
@@ -28,6 +29,7 @@ const createEmptyForm = () => ({
 });
 
 export default function AddProduct({ onProductAdded, onCancel }) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState(createEmptyForm());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -102,7 +104,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
   const processFile = (file) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file (PNG, JPG, WEBP, etc.)');
+      alert(t('invalid_image_type'));
       return;
     }
 
@@ -141,13 +143,13 @@ export default function AddProduct({ onProductAdded, onCancel }) {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      setAlertMessage({ type: 'error', text: 'Product Name is required' });
+      setAlertMessage({ type: 'error', text: t('product_name_required') });
       return;
     }
 
     const numericPrice = parseFloat(formData.price);
     if (isNaN(numericPrice) || numericPrice <= 0) {
-      alert('Please enter a valid price greater than 0');
+      alert(t('invalid_price'));
       return;
     }
 
@@ -180,7 +182,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.error || 'Failed to save product');
+        throw new Error(errData.error || t('error_saving_product'));
       }
 
       const savedProduct = await response.json();
@@ -192,7 +194,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
       resetForm(isEditing ? savedProduct : null);
     } catch (err) {
       console.error(err);
-      setAlertMessage({ type: 'error', text: err.message || 'Error occurred while saving product' });
+      setAlertMessage({ type: 'error', text: err.message || t('error_saving_product') });
     } finally {
       setIsSubmitting(false);
     }
@@ -215,7 +217,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
       } });
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.error || 'Failed to delete product');
+        throw new Error(errData.error || t('error_deleting_product'));
       }
 
       await fetchProducts();
@@ -227,11 +229,11 @@ export default function AddProduct({ onProductAdded, onCancel }) {
         onProductAdded(confirmDelete, true, 'delete');
       }
 
-      setAlertMessage({ type: 'success', text: `${confirmDelete.name} deleted successfully` });
+      setAlertMessage({ type: 'success', text: t('deleted_success', { name: confirmDelete.name }) });
       setConfirmDelete(null);
     } catch (error) {
       console.error(error);
-      setAlertMessage({ type: 'error', text: error.message || 'Error deleting product' });
+      setAlertMessage({ type: 'error', text: error.message || t('error_deleting_product') });
       setConfirmDelete(null);
     }
   };
@@ -242,10 +244,10 @@ export default function AddProduct({ onProductAdded, onCancel }) {
         <div className="space-y-1">
           <h2 className="text-xl font-extrabold text-slate-100 flex items-center gap-2">
             <Plus className="w-5 h-5 text-teal-400" />
-            {isEditing ? 'Edit Menu Product' : 'Add New Menu Product'}
+            {isEditing ? t('edit_product') : t('add_new_product')}
           </h2>
           <p className="text-slate-500 text-xs">
-            Upload a real product photo, save it to the server folder, and update or remove menu items instantly.
+            {t('upload_real_photo')}
           </p>
         </div>
 
@@ -255,7 +257,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
             className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 text-xs font-bold rounded-xl transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Menu
+            {t('back_to_menu')}
           </button>
         )}
       </div>
@@ -266,10 +268,10 @@ export default function AddProduct({ onProductAdded, onCancel }) {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-sm font-black uppercase tracking-wider text-slate-300">
-                  {isEditing ? 'Update product details' : 'Create a new product'}
+                  {isEditing ? t('update_product_details') : t('create_new_product')}
                 </h3>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  The uploaded image is stored in the server uploads folder and linked to the product record.
+                  {t('uploaded_image_stored')}
                 </p>
               </div>
               <button
@@ -277,14 +279,14 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                 onClick={() => resetForm()}
                 className="px-3 py-2 text-[11px] font-bold rounded-lg border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
               >
-                New Product
+                {t('new_product')}
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <label htmlFor="product-name" className="block text-xs font-black uppercase text-slate-400 tracking-wider">
-                  Product Name <span className="text-teal-400">*</span>
+                  {t('product_name')} <span className="text-teal-400">*</span>
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
@@ -296,7 +298,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    placeholder="e.g., Flame Grilled Ribeye Steak"
+                    placeholder={t('placeholder_product_name')}
                     required
                     className="block w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 focus:border-teal-500/60 rounded-xl text-slate-200 text-sm placeholder-slate-600 focus:outline-none transition-all"
                   />
@@ -306,7 +308,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2">
                   <label htmlFor="product-price" className="block text-xs font-black uppercase text-slate-400 tracking-wider">
-                    Price (USD) <span className="text-teal-400">*</span>
+                    {t('price_usd')} <span className="text-teal-400">*</span>
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
@@ -320,7 +322,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                       min="0.01"
                       value={formData.price}
                       onChange={handleChange}
-                      placeholder="24.99"
+                      placeholder={t('placeholder_price')}
                       required
                       className="block w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 focus:border-teal-500/60 rounded-xl text-slate-200 text-sm placeholder-slate-600 focus:outline-none transition-all"
                     />
@@ -329,7 +331,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
 
                 <div className="space-y-2">
                   <label htmlFor="product-category" className="block text-xs font-black uppercase text-slate-400 tracking-wider">
-                    Category <span className="text-teal-400">*</span>
+                    {t('category')} <span className="text-teal-400">*</span>
                   </label>
                   <select
                     id="product-category"
@@ -349,7 +351,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
 
               <div className="space-y-2">
                 <label htmlFor="product-prep-time" className="block text-xs font-black uppercase text-slate-400 tracking-wider">
-                  Prep Time (minutes) <span className="text-teal-400">*</span>
+                  {t('prep_time_minutes')} <span className="text-teal-400">*</span>
                 </label>
                 <input
                   type="number"
@@ -358,7 +360,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                   min="1"
                   value={formData.prep_time_minutes}
                   onChange={handleChange}
-                  placeholder="5"
+                  placeholder={t('placeholder_prep_time')}
                   required
                   className="block w-full px-4 py-3 bg-slate-950 border border-slate-800 focus:border-teal-500/60 rounded-xl text-slate-200 text-sm placeholder-slate-600 focus:outline-none transition-all"
                 />
@@ -366,7 +368,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
 
               <div className="space-y-2">
                 <label htmlFor="product-desc" className="block text-xs font-black uppercase text-slate-400 tracking-wider">
-                  Menu Description
+                  {t('menu_description')}
                 </label>
                 <div className="relative">
                   <span className="absolute top-3 left-3.5 text-slate-500">
@@ -378,7 +380,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                     rows="3"
                     value={formData.description}
                     onChange={handleChange}
-                    placeholder="Describe your dish highlights, ingredients, allergies, and presentation details..."
+                    placeholder={t('placeholder_desc')}
                     className="block w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 focus:border-teal-500/60 rounded-xl text-slate-200 text-sm placeholder-slate-600 focus:outline-none transition-all resize-none"
                   />
                 </div>
@@ -387,7 +389,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
               <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between border-b border-slate-850 pb-2">
                   <span className="text-xs font-black uppercase text-slate-400 tracking-wider">
-                    Image Source Selection
+                    {t('image_source_selection')}
                   </span>
                   <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-850">
                     <button
@@ -397,7 +399,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                         imageSourceMode === 'url' ? 'bg-teal-500/10 text-teal-400' : 'text-slate-500 hover:text-slate-300'
                       }`}
                     >
-                      Image URL
+                      {t('image_url')}
                     </button>
                     <button
                       type="button"
@@ -406,7 +408,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                         imageSourceMode === 'upload' ? 'bg-teal-500/10 text-teal-400' : 'text-slate-500 hover:text-slate-300'
                       }`}
                     >
-                      File Upload
+                      {t('file_upload')}
                     </button>
                   </div>
                 </div>
@@ -414,7 +416,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                 {imageSourceMode === 'url' && (
                   <div className="space-y-2">
                     <label htmlFor="product-image" className="block text-[11px] font-bold text-slate-500">
-                      Provide External Image URL
+                      {t('provide_external_url')}
                     </label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
@@ -426,7 +428,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                         name="image"
                         value={formData.image}
                         onChange={handleChange}
-                        placeholder="https://images.unsplash.com/your-custom-image-url..."
+                        placeholder={t('placeholder_url')}
                         className="block w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 focus:border-teal-500/60 rounded-xl text-slate-200 text-xs placeholder-slate-750 focus:outline-none transition-all"
                       />
                     </div>
@@ -445,16 +447,16 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                   >
                     <UploadCloud className="w-8 h-8 text-slate-500 mx-auto mb-2 animate-pulse" />
                     <p className="text-xs text-slate-300 font-bold">
-                      Drag and drop your food photo here, or
+                      {t('drag_drop_image')}
                     </p>
                     <label className="mt-2 inline-block cursor-pointer">
                       <span className="px-3 py-1.5 bg-slate-900 hover:bg-slate-850 text-[11px] font-extrabold text-teal-400 hover:text-teal-300 border border-slate-800 rounded-lg transition-all">
-                        Browse Files
+                        {t('browse_files')}
                       </span>
                       <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                     </label>
                     <p className="text-[10px] text-slate-500 mt-2">
-                      Supports PNG, JPG, JPEG, WEBP files
+                      {t('supports_jpg_png')}
                     </p>
                   </div>
                 )}
@@ -469,12 +471,12 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                   {isSubmitting ? (
                     <>
                       <span className="w-4 h-4 border-2 border-slate-300 border-t-transparent rounded-full animate-spin" />
-                      Saving Product...
+                      {isEditing ? t('updating_product') : t('creating_product')}
                     </>
                   ) : (
                     <>
                       <Plus className="w-4 h-4 stroke-3" />
-                      {isEditing ? 'Update Product' : 'Create Product'}
+                      {isEditing ? t('edit_product') : t('add_new_product')}
                     </>
                   )}
                 </button>
@@ -487,7 +489,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
           <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-5">
             <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Live Preview
+              {t('live_preview')}
             </h4>
 
             <div className="bg-slate-950 border border-slate-850 rounded-2.5xl overflow-hidden shadow-xl flex flex-col h-85">
@@ -505,7 +507,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-slate-700 bg-slate-900">
                     <FileImage className="w-10 h-10 mb-2" />
-                    <span className="text-[10px] font-bold">No Image Selected</span>
+                    <span className="text-[10px] font-bold">{t('no_image_selected')}</span>
                   </div>
                 )}
 
@@ -520,7 +522,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-start gap-2">
                     <h5 className="font-extrabold text-slate-200 text-sm line-clamp-1">
-                      {formData.name.trim() || 'Product Name Preview'}
+                      {formData.name.trim() || t('preview_product_name')}
                     </h5>
                     <span className="text-sm font-black text-amber-400 shrink-0">
                       ${formData.price ? parseFloat(formData.price).toFixed(2) : '0.00'}
@@ -528,14 +530,14 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                   </div>
 
                   <p className="text-[11px] text-slate-500 line-clamp-3 leading-normal font-light">
-                    {formData.description.trim() || 'Menu highlights and fresh ingredient descriptions will be rendered elegantly here.'}
+                    {formData.description.trim() || t('preview_desc')}
                   </p>
                 </div>
 
                 <div className="pt-3 border-t border-slate-900 flex justify-between items-center text-[10px] font-bold">
-                  <span className="text-slate-500">Interactive Menu Card</span>
+                  <span className="text-slate-500">{t('interactive_menu_card')}</span>
                   <span className="text-teal-400 flex items-center gap-1">
-                    <Check className="w-3 h-3 stroke-3" /> Stored on server
+                    <Check className="w-3 h-3 stroke-3" /> {t('stored_on_server')}
                   </span>
                 </div>
               </div>
@@ -544,7 +546,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
             <div className="p-4 bg-slate-950/40 border border-slate-850 rounded-2xl text-[11px] text-slate-500 leading-relaxed flex gap-2">
               <HelpCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
               <span>
-                <strong>Image uploads:</strong> files are saved under the server uploads/products folder and shown in the menu immediately after you save.
+                {t('image_upload_info')}
               </span>
             </div>
           </div>
@@ -552,15 +554,15 @@ export default function AddProduct({ onProductAdded, onCancel }) {
           <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider">
-                Manage existing products
+                {t('manage_existing_products')}
               </h4>
               <span className="text-[11px] text-slate-500">{products.length} items</span>
             </div>
 
             {isLoadingProducts ? (
-              <p className="text-[11px] text-slate-500">Loading products...</p>
+              <p className="text-[11px] text-slate-500">{t('loading')}</p>
             ) : products.length === 0 ? (
-              <p className="text-[11px] text-slate-500">No products yet. Create one to get started.</p>
+              <p className="text-[11px] text-slate-500">{t('no_products_yet')}</p>
             ) : (
               <div className="space-y-2 max-h-75 overflow-y-auto pr-1">
                 {products.map((product) => (
@@ -578,7 +580,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                         type="button"
                         onClick={() => resetForm(product)}
                         className="p-2 rounded-lg border border-slate-800 text-slate-400 hover:text-slate-200"
-                        title="Edit"
+                        title={t('edit')}
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
@@ -586,7 +588,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                         type="button"
                         onClick={() => handleDelete(product)}
                         className="p-2 rounded-lg border border-rose-900/40 text-rose-400 hover:bg-rose-950/30"
-                        title="Delete"
+                        title={t('delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -615,7 +617,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
               <h3 className={`font-black text-sm ${
                 alertMessage.type === 'error' ? 'text-rose-400' : 'text-emerald-400'
               }`}>
-                {alertMessage.type === 'error' ? 'Error' : 'Success'}
+                {alertMessage.type === 'error' ? t('error') : t('success')}
               </h3>
             </div>
             <p className="text-slate-200 text-sm mb-4">{alertMessage.text}</p>
@@ -627,7 +629,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                   : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
               }`}
             >
-              OK
+              {t('ok')}
             </button>
           </div>
         </div>
@@ -638,22 +640,20 @@ export default function AddProduct({ onProductAdded, onCancel }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setConfirmDelete(null)} />
           <div className="relative rounded-2xl border border-rose-900/40 bg-slate-950/90 p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="font-black text-slate-100 mb-2">Delete Product?</h3>
-            <p className="text-slate-400 text-sm mb-6">
-              Are you sure you want to delete <span className="text-amber-400">{confirmDelete.name}</span>? This action cannot be undone.
-            </p>
+            <h3 className="font-black text-slate-100 mb-2">{t('delete_product_confirm_title')}</h3>
+            <p className="text-slate-400 text-sm mb-6" dangerouslySetInnerHTML={{ __html: t('delete_product_confirm_desc', { name: confirmDelete.name }) }} />
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmDelete(null)}
                 className="flex-1 py-2.5 rounded-lg border border-slate-800 text-slate-300 hover:bg-slate-800 font-bold text-sm transition-all"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 onClick={confirmDeleteProduct}
                 className="flex-1 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm transition-all"
               >
-                Delete
+                {t('delete')}
               </button>
             </div>
           </div>

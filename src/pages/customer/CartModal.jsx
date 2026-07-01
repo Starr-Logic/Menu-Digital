@@ -26,6 +26,7 @@ export default function CartModal({
   isPlacingOrder,
   selectedTable,
   lastPlacedOrder,
+  settings,
   // layout triggers
   isSidebar = false,
   isMobile = false,
@@ -36,10 +37,20 @@ export default function CartModal({
 
   const cartItemCount = getCartItemCount();
   const cartTotal = getCartTotal();
+  // Parse minimum order from settings (string like "$5.00")
+  let minOrderRaw = null;
+  let minOrderNumeric = 0;
+  try {
+    minOrderRaw = settings && settings.minOrderValue ? settings.minOrderValue.toString() : null;
+    minOrderNumeric = minOrderRaw ? parseFloat(minOrderRaw.replace(/[^0-9.]/g, '')) || 0 : 0;
+  } catch (err) {
+    minOrderNumeric = 0;
+  }
+  const belowMin = minOrderNumeric > 0 && cartTotal < minOrderNumeric;
 
   // Unified Cart Panel Inner Content
   const renderCartPanelContent = () => (
-    <div className="space-y-6" id="cart-panel-inner">
+    <div className="space-y-6 min-w-0" id="cart-panel-inner">
       {/* Header */}
       <div className="flex justify-between items-center border-b border-slate-800 pb-4" id="cart-header">
         <div className="flex items-center gap-2.5">
@@ -76,7 +87,7 @@ export default function CartModal({
               const prod = products.find(p => p.id === parseInt(id));
               if (!prod) return null;
               return (
-                <div key={id} className="flex items-center justify-between py-3.5 first:pt-0" id={`cart-item-${id}`}>
+                <div key={id} className="flex items-center justify-between py-3.5 first:pt-0 min-w-0" id={`cart-item-${id}`}>
                   <div className="space-y-1">
                     <h4 className="text-sm font-bold text-slate-200 line-clamp-1">{prod.name}</h4>
                     <p className="text-xs text-slate-500 font-medium">${prod.price.toFixed(2)} {t('each')}</p>
@@ -141,7 +152,7 @@ export default function CartModal({
           <button
             id="btn-confirm-checkout"
             onClick={handlePlaceOrder}
-            disabled={isPlacingOrder}
+            disabled={isPlacingOrder || belowMin}
             className="w-full flex items-center justify-center gap-2 py-3.5 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 text-xs font-black rounded-xl shadow-lg shadow-amber-500/10 transition-colors cursor-pointer"
           >
             {isPlacingOrder ? (
@@ -155,6 +166,13 @@ export default function CartModal({
               </>
             )}
           </button>
+
+          {/* Minimum order notice */}
+          {minOrderNumeric > 0 && belowMin && (
+            <div className="mt-2 text-xs text-rose-300 bg-rose-950/10 border border-rose-800 rounded-xl p-2">
+              <span dangerouslySetInnerHTML={{ __html: t('minimum_order_text', { minOrder: minOrderRaw, diff: `$${(minOrderNumeric - cartTotal).toFixed(2)}` }) }} />
+            </div>
+          )}
         </>
       )}
 
@@ -195,7 +213,7 @@ export default function CartModal({
       <>
         {/* MOBILE STICKY FLOATING CART BAR */}
         {cartItemCount > 0 && (
-          <div className="fixed bottom-6 inset-x-4 z-40 lg:hidden" id="mobile-floating-cart-trigger">
+          <div className="fixed bottom-24 inset-x-4 z-40 lg:hidden" id="mobile-floating-cart-trigger">
             <button 
               onClick={() => setIsOpen(true)}
               className="w-full bg-slate-100 text-slate-950 rounded-2xl py-4 px-5 flex justify-between items-center shadow-2xl hover:bg-white transition-all active:scale-[0.98] border border-white/10 cursor-pointer"
@@ -223,7 +241,7 @@ export default function CartModal({
         {/* MOBILE DRAWER CART OVERLAY */}
         <AnimatePresence>
           {isOpen && (
-            <div className="fixed inset-0 z-50 overflow-hidden lg:hidden" id="mobile-cart-drawer-container">
+            <div className="fixed inset-0 z-[60] overflow-hidden lg:hidden" id="mobile-cart-drawer-container">
               {/* Backdrop */}
               <motion.div 
                 initial={{ opacity: 0 }}

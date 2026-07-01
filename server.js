@@ -37,6 +37,10 @@ async function startServer() {
   io.on('connection', (socket) => {
     console.log(`Client connected to WebSocket: ${socket.id}`);
     
+    socket.on('call_waiter', (data) => {
+      io.emit('waiter_called', data);
+    });
+
     socket.on('disconnect', () => {
       console.log(`Client disconnected from WebSocket: ${socket.id}`);
     });

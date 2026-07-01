@@ -1,9 +1,11 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function ProductDetailModal({ product, isOpen, onClose, addToCart }) {
   const [qty, setQty] = useState(1);
+  const { t } = useTranslation();
 
   if (!product) return null;
 
@@ -40,7 +42,7 @@ export default function ProductDetailModal({ product, isOpen, onClose, addToCart
                 {product.image ? (
                   <img src={product.image} alt={product.name} className="w-full h-48 object-cover rounded-2xl border border-slate-800" />
                 ) : (
-                  <div className="w-full h-48 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-500">No image</div>
+                  <div className="w-full h-48 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-500">{t('no_image_selected')}</div>
                 )}
               </div>
 
@@ -70,7 +72,7 @@ export default function ProductDetailModal({ product, isOpen, onClose, addToCart
                     }}
                     className="bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-3 rounded-xl font-black shadow-md"
                   >
-                    Add {qty} to cart
+                    {t('add_qty_to_cart', { qty })}
                   </button>
                 </div>
               </div>

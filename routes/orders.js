@@ -36,7 +36,7 @@ router.get('/table/:tableName', async (req, res) => {
     const orders = await Order.findAll({
       where: {
         table_number: req.params.tableName,
-        status: ['Pending', 'Preparing']
+        status: ['Pending', 'Preparing', 'Served']
       },
       include: [
         {
@@ -176,7 +176,7 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
     const { id } = req.params;
     const { status, prep_time_minutes } = req.body;
 
-    const allowedStatuses = ['Pending', 'Preparing', 'Served', 'Cancelled'];
+    const allowedStatuses = ['Pending', 'Preparing', 'Served', 'Paid', 'Cancelled'];
     if (!status || !allowedStatuses.includes(status)) {
       return res.status(400).json({ error: `Status must be one of: ${allowedStatuses.join(', ')}` });
     }
@@ -189,6 +189,9 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
     order.status = status;
     if (prep_time_minutes !== undefined) {
       order.prep_time_minutes = prep_time_minutes;
+    }
+    if (status === 'Preparing') {
+      order.preparedAt = new Date();
     }
     await order.save();
 

@@ -30,6 +30,11 @@ export default function(sequelize) {
       allowNull: true,
       defaultValue: null,
     },
+    preparedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
+    },
     createdAt: {
       type: DataTypes.DATE,
       field: 'created_at',

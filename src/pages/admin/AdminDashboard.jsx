@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
-import { API_BASE_URL, SOCKET_URL } from '../config';
+import { API_BASE_URL, SOCKET_URL } from '../../config';
 import { 
   ChefHat, 
   Clock, 
@@ -29,12 +30,12 @@ function CountdownTimer({ order }) {
     if (!order.prep_time_minutes || order.status !== 'Preparing') return;
     
     const calculateRemaining = () => {
-      const updatedAt = new Date(order.updatedAt || Date.now());
-      const endTime = updatedAt.getTime() + order.prep_time_minutes * 60000;
+      const startedAt = new Date(order.preparedAt || order.createdAt || Date.now());
+      const endTime = startedAt.getTime() + order.prep_time_minutes * 60000;
       const now = Date.now();
       const diffSeconds = Math.max(0, Math.floor((endTime - now) / 1000));
       
-      if (diffSeconds <= 0) return 'Ready!';
+      if (diffSeconds <= 0) return '00:00';
       
       const m = Math.floor(diffSeconds / 60);
       const s = diffSeconds % 60;
@@ -60,11 +61,21 @@ function CountdownTimer({ order }) {
 }
 
 export default function AdminDashboard({ onNewOrderToast }) {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [socketConnected, setSocketConnected] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [statusFilter, setStatusFilter] = useState('All');
+  const [tableFilter, setTableFilter] = useState('All Tables');
+  const [viewMode, setViewMode] = useState('tickets'); // 'tickets' or 'tables'
+  const [selectedBillingTable, setSelectedBillingTable] = useState(null);
+
+  const localizeTable = (tableName) => {
+    if (!tableName || typeof tableName !== 'string') return tableName;
+    return tableName.replace(/Table/gi, t('table'));
+  };
+
   
   // Audio chime feedback using Web Audio API
   const playNotificationSound = () => {
@@ -176,6 +187,15 @@ export default function AdminDashboard({ onNewOrderToast }) {
       }
     });
 
+    socket.on('waiter_called', (data) => {
+      console.log('Real-time: Waiter called on client!', data);
+      if (data.type === 'bill') {
+        onNewOrderToast(`💵 Bill Requested by ${data.table}!`);
+      } else {
+        onNewOrderToast(`🛎️ Waiter Called by ${data.table}!`);
+      }
+    });
+
     // 4. Listen for real-time status updates from other terminals/backends
     socket.on('order_updated', (updatedOrder) => {
       console.log('Real-time: Order status updated on client!', updatedOrder);
@@ -191,6 +211,7 @@ export default function AdminDashboard({ onNewOrderToast }) {
       socket.off('connect_error');
       socket.off('new_order');
       socket.off('order_updated');
+      socket.off('waiter_called');
       socket.disconnect();
     };
   }, []);
@@ -232,6 +253,59 @@ export default function AdminDashboard({ onNewOrderToast }) {
     }
   };
 
+  const handleMarkTablePaid = async (orderIds) => {
+    if (!window.confirm(`Are you sure you want to mark all ${orderIds.length} active orders as Paid and clear this table?`)) return;
+    try {
+      // Execute all updates in parallel
+      await Promise.all(orderIds.map(id => {
+        const token = localStorage.getItem('adminToken');
+        return fetch(`${API_BASE_URL}/orders/${id}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ status: 'Paid' }),
+        });
+      }));
+      // Re-fetch to guarantee state sync
+      fetchOrders();
+    } catch (err) {
+      console.error('Failed to clear table:', err);
+      alert('Error clearing table. Please refresh and try again.');
+    }
+  };
+
+  // Helper for rendering Table View aggregated data
+  const getTableSummary = (tableName) => {
+    const tableOrders = orders.filter(o => o.table_number === tableName && ['Pending', 'Preparing', 'Served'].includes(o.status));
+    const combinedItems = {};
+    let total = 0;
+    
+    tableOrders.forEach(order => {
+      order.items?.forEach(item => {
+        const pid = item.product_id;
+        if (!combinedItems[pid]) {
+          combinedItems[pid] = {
+            name: item.product?.name || 'Unknown Item',
+            price: item.price,
+            quantity: 0
+          };
+        }
+        combinedItems[pid].quantity += item.quantity;
+        total += (item.price * item.quantity);
+      });
+    });
+    
+    return {
+      orderIds: tableOrders.map(o => o.id),
+      items: Object.values(combinedItems),
+      total,
+      ticketCount: tableOrders.length
+    };
+  };
+
+
   const toCurrencyNumber = (value) => {
     const parsedValue = Number(value);
     return Number.isFinite(parsedValue) ? parsedValue : 0;
@@ -247,16 +321,25 @@ export default function AdminDashboard({ onNewOrderToast }) {
     pending: orders.filter(o => o.status === 'Pending').length,
     preparing: orders.filter(o => o.status === 'Preparing').length,
     served: orders.filter(o => o.status === 'Served').length,
+    paid: orders.filter(o => o.status === 'Paid').length,
     cancelled: orders.filter(o => o.status === 'Cancelled').length,
     avgValue: orders.length > 0 
       ? (orders.reduce((sum, o) => sum + toCurrencyNumber(o.total_price), 0) / orders.length) 
       : 0
   };
 
+  const allTables = Array.from(new Set(orders.map(o => o.table_number))).sort((a, b) => {
+    const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
+    const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
+    return numA - numB;
+  });
+
   // Filters
-  const filteredOrders = statusFilter === 'All' 
-    ? orders 
-    : orders.filter(o => o.status === statusFilter);
+  const filteredOrders = orders.filter(o => {
+    if (statusFilter !== 'All' && o.status !== statusFilter) return false;
+    if (tableFilter !== 'All Tables' && o.table_number !== tableFilter) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -269,7 +352,7 @@ export default function AdminDashboard({ onNewOrderToast }) {
             <TrendingUp className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">Gross Revenue</div>
+            <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">{t('gross_revenue')}</div>
             <div className="text-lg font-black text-slate-100">${formatCurrency(metrics.revenue)}</div>
           </div>
         </div>
@@ -282,7 +365,7 @@ export default function AdminDashboard({ onNewOrderToast }) {
             )}
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">Pending Orders</div>
+            <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">{t('pending_orders')}</div>
             <div className="text-lg font-black text-slate-100">{metrics.pending}</div>
           </div>
         </div>
@@ -292,7 +375,7 @@ export default function AdminDashboard({ onNewOrderToast }) {
             <ChefHat className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">In Preparation</div>
+            <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">{t('in_preparation')}</div>
             <div className="text-lg font-black text-slate-100">{metrics.preparing}</div>
           </div>
         </div>
@@ -302,7 +385,7 @@ export default function AdminDashboard({ onNewOrderToast }) {
             <DollarSign className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">Average Ticket</div>
+            <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">{t('average_ticket')}</div>
             <div className="text-lg font-black text-slate-100">${formatCurrency(metrics.avgValue)}</div>
           </div>
         </div>
@@ -318,7 +401,7 @@ export default function AdminDashboard({ onNewOrderToast }) {
             <div className="flex items-center gap-3">
               <h3 className="font-extrabold text-slate-100 text-lg flex items-center gap-2">
                 <ChefHat className="w-5 h-5 text-emerald-400" />
-                Real-Time Kitchen Deck
+                {t('real_time_kitchen')}
               </h3>
               
               {/* Connection state badge */}
@@ -332,7 +415,7 @@ export default function AdminDashboard({ onNewOrderToast }) {
               </span>
             </div>
             <p className="text-slate-500 text-xs font-light">
-              Dine-in orders appearing instantly with custom sound notification and automated list updates.
+              {t('real_time_desc')}
             </p>
           </div>
 
@@ -359,7 +442,7 @@ export default function AdminDashboard({ onNewOrderToast }) {
               className="flex items-center gap-1.5 px-3 py-2 bg-slate-950 border border-slate-800 hover:border-slate-750 text-slate-400 hover:text-slate-200 text-[11px] font-bold rounded-xl transition-all"
             >
               <Bell className="w-3.5 h-3.5" />
-              Test Chime
+              {t('test_chime')}
             </button>
 
             <button
@@ -367,56 +450,148 @@ export default function AdminDashboard({ onNewOrderToast }) {
               className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-950 border border-slate-800 hover:border-slate-750 text-slate-300 hover:text-white text-[11px] font-bold rounded-xl transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Sync Manual
+              {t('sync_manual')}
             </button>
           </div>
         </div>
 
-        {/* Filter Badges */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-[10px] text-slate-500 uppercase font-extrabold tracking-wider">Filter Deck:</span>
-          </div>
-          
-          <div className="flex flex-wrap gap-1.5">
-            {['All', 'Pending', 'Preparing', 'Served', 'Cancelled'].map((filt) => (
+        {/* View Mode & Filter Controls */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            {/* View Mode Toggle */}
+            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 shadow-inner overflow-hidden">
               <button
-                key={filt}
-                onClick={() => setStatusFilter(filt)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
-                  statusFilter === filt
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-md shadow-emerald-500/5'
-                    : 'bg-slate-950 text-slate-500 border-slate-900 hover:bg-slate-900 hover:text-slate-300'
+                onClick={() => setViewMode('tickets')}
+                className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+                  viewMode === 'tickets' 
+                    ? 'bg-indigo-600 text-white shadow-md' 
+                    : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
-                {filt} ({
-                  filt === 'All' ? orders.length :
-                  filt === 'Pending' ? metrics.pending :
-                  filt === 'Preparing' ? metrics.preparing :
-                  filt === 'Served' ? metrics.served :
-                  metrics.cancelled
-                })
+                {t('ticket')}
               </button>
-            ))}
+              <button
+                onClick={() => setViewMode('tables')}
+                className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+                  viewMode === 'tables' 
+                    ? 'bg-emerald-600 text-white shadow-md' 
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {t('table')}
+              </button>
+            </div>
+            
+            <div className="h-6 w-px bg-slate-800 mx-1 hidden sm:block"></div>
+
+            {viewMode === 'tickets' ? (
+              <>
+                <Filter className="w-3.5 h-3.5 text-slate-500 hidden sm:block" />
+                <span className="text-[10px] text-slate-500 uppercase font-extrabold tracking-wider hidden sm:block">{t('filter')}:</span>
+              </>
+            ) : (
+              <>
+                <Utensils className="w-3.5 h-3.5 text-slate-500 hidden sm:block" />
+                <span className="text-[10px] text-slate-500 uppercase font-extrabold tracking-wider hidden sm:block">{t('select_table')}:</span>
+              </>
+            )}
           </div>
+          
+          {viewMode === 'tickets' ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-1.5">
+                {['All', 'Pending', 'Preparing', 'Served', 'Paid', 'Cancelled'].map((filt) => (
+                  <button
+                    key={filt}
+                    onClick={() => setStatusFilter(filt)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
+                      statusFilter === filt
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-md shadow-emerald-500/5'
+                        : 'bg-slate-950 text-slate-500 border-slate-900 hover:bg-slate-900 hover:text-slate-300'
+                    }`}
+                  >
+                    {t(filt.toLowerCase())} ({
+                      filt === 'All' ? orders.length :
+                      filt === 'Pending' ? metrics.pending :
+                      filt === 'Preparing' ? metrics.preparing :
+                      filt === 'Served' ? metrics.served :
+                      filt === 'Paid' ? metrics.paid :
+                      metrics.cancelled
+                    })
+                  </button>
+                ))}
+              </div>
+              {allTables.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-800/50">
+                  {['All Tables', ...allTables].map((tbl) => (
+                    <button
+                      key={tbl}
+                      onClick={() => setTableFilter(tbl)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
+                        tableFilter === tbl
+                          ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 shadow-md shadow-indigo-500/5'
+                          : 'bg-slate-950 text-slate-500 border-slate-900 hover:bg-slate-900 hover:text-slate-300'
+                      }`}
+                    >
+                      {tbl === 'All Tables' ? t('all_tables') : localizeTable(tbl)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (() => {
+            const activeTables = Array.from(new Set(
+              orders.filter(o => ['Pending', 'Preparing', 'Served'].includes(o.status))
+                    .map(o => o.table_number)
+            )).sort((a, b) => {
+              const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
+              const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
+              return numA - numB;
+            });
+
+            if (!selectedBillingTable || !activeTables.includes(selectedBillingTable)) {
+              if (activeTables.length > 0) {
+                setTimeout(() => setSelectedBillingTable(activeTables[0]), 0);
+              }
+            }
+
+            return (
+              <div className="flex flex-wrap gap-1.5">
+                {activeTables.map(tableName => (
+                  <button
+                    key={tableName}
+                    onClick={() => setSelectedBillingTable(tableName)}
+                    className={`px-4 py-1.5 rounded-xl text-xs font-black border transition-all ${
+                      selectedBillingTable === tableName
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-md shadow-emerald-500/5'
+                        : 'bg-slate-950 text-slate-500 border-slate-900 hover:bg-slate-900 hover:text-slate-300'
+                    }`}
+                  >
+                    {localizeTable(tableName)}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
-        {/* Order Cards Deck Grid */}
-        {loading ? (
-          <div className="text-center py-20 space-y-4">
-            <RefreshCw className="w-8 h-8 animate-spin text-emerald-400 mx-auto" />
-            <p className="text-slate-500 text-xs font-mono">Loading active orders database...</p>
-          </div>
-        ) : filteredOrders.length === 0 ? (
-          <div className="text-center py-20 space-y-4 border border-dashed border-slate-850 rounded-3xl bg-slate-950/10">
-            <div className="w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center text-slate-700 border border-slate-850 mx-auto">
-              <ChefHat className="w-5 h-5" />
-            </div>
-            <p className="text-slate-500 text-xs">No orders recorded in the current active filter.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {viewMode === 'tickets' ? (
+          <>
+            {/* Order Cards Deck Grid */}
+            {loading ? (
+              <div className="text-center py-20 space-y-4">
+                <RefreshCw className="w-8 h-8 animate-spin text-emerald-400 mx-auto" />
+                <p className="text-slate-500 text-xs font-mono">{t('loading')}</p>
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="text-center py-20 space-y-4 border border-dashed border-slate-850 rounded-3xl bg-slate-950/10">
+                <div className="w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center text-slate-700 border border-slate-850 mx-auto">
+                  <ChefHat className="w-5 h-5" />
+                </div>
+                <p className="text-slate-500 text-xs">{t('no_orders_found')}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredOrders.map((order) => (
               <div 
                 key={order.id}
@@ -431,7 +606,7 @@ export default function AdminDashboard({ onNewOrderToast }) {
                 <div className="p-4 border-b border-slate-900 flex justify-between items-center bg-slate-900/30">
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-1 bg-slate-950 border border-slate-800 text-slate-200 text-[10px] font-black rounded-lg">
-                      {order.table_number}
+                      {localizeTable(order.table_number)}
                     </span>
                     <span className="text-[10px] text-slate-500 font-bold uppercase">#{order.id}</span>
                   </div>
@@ -441,9 +616,10 @@ export default function AdminDashboard({ onNewOrderToast }) {
                       order.status === 'Pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
                       order.status === 'Preparing' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
                       order.status === 'Served' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                      order.status === 'Paid' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
                       'bg-slate-850 text-slate-400 border border-slate-800/50'
                     }`}>
-                      {order.status}
+                      {t(order.status.toLowerCase())}
                     </span>
                     {order.status === 'Preparing' && order.prep_time_minutes > 0 && (
                       <CountdownTimer order={order} />
@@ -458,7 +634,7 @@ export default function AdminDashboard({ onNewOrderToast }) {
                       <div key={item.id} className="flex justify-between items-center text-xs pt-2.5 first:pt-0">
                         <div className="space-y-0.5">
                           <span className="font-extrabold text-slate-200">{item.product?.name}</span>
-                          <div className="text-[10px] text-slate-500">${formatCurrency(item.price)} each</div>
+                          <div className="text-[10px] text-slate-500">${formatCurrency(item.price)} {t('each')}</div>
                         </div>
                         <span className="font-black text-slate-200 bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800 text-xs">
                           x{item.quantity}
@@ -479,14 +655,14 @@ export default function AdminDashboard({ onNewOrderToast }) {
                   )}
 
                   <div className="text-[10px] text-slate-500 font-mono pt-1">
-                    Received: {new Date(order.createdAt).toLocaleTimeString()}
+                    {t('received')}: {new Date(order.createdAt).toLocaleTimeString()}
                   </div>
                 </div>
 
                 {/* Ticket Footer Action Controls */}
                 <div className="p-4 bg-slate-900/20 border-t border-slate-900 space-y-3.5">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-slate-500">Ticket Total</span>
+                    <span className="font-bold text-slate-500">{t('ticket_total')}</span>
                     <span className="font-black text-base text-slate-200">${formatCurrency(order.total_price)}</span>
                   </div>
 
@@ -503,13 +679,13 @@ export default function AdminDashboard({ onNewOrderToast }) {
                         className="col-span-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1"
                       >
                         <Play className="w-3 h-3 fill-white" />
-                        Prepare Order
+                        {t('prepare_order')}
                       </button>
                       <button
                         onClick={() => handleUpdateStatus(order.id, 'Cancelled')}
                         className="py-2 border border-rose-950 bg-rose-950/20 hover:bg-rose-950/40 text-rose-400 text-xs font-bold rounded-lg transition-colors cursor-pointer"
                       >
-                        Cancel
+                        {t('cancel')}
                       </button>
                     </div>
                   )}
@@ -521,28 +697,37 @@ export default function AdminDashboard({ onNewOrderToast }) {
                         className="col-span-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        Mark Served
+                        {t('serve_order')}
                       </button>
                       <button
                         onClick={() => handleUpdateStatus(order.id, 'Cancelled')}
                         className="py-2 border border-rose-950 bg-rose-950/20 hover:bg-rose-950/40 text-rose-400 text-xs font-bold rounded-lg transition-colors cursor-pointer"
                       >
-                        Cancel
+                        {t('cancel')}
                       </button>
                     </div>
                   )}
 
-                  {(order.status === 'Served' || order.status === 'Cancelled') && (
+                  {/* Actions for Served */}
+                  {order.status === 'Served' && (
+                    <div className="pt-2 mt-4 border-t border-slate-900/60 grid grid-cols-1">
+                      <div className="py-2 bg-slate-900/50 text-slate-500 text-xs font-bold rounded-lg flex items-center justify-center border border-slate-800/50">
+                        {t('pay_via_table_tab', 'Pay via Table Tab')}
+                      </div>
+                    </div>
+                  )}
+
+                  {(order.status === 'Paid' || order.status === 'Cancelled') && (
                     <div className="flex items-center justify-center gap-1.5 py-2 bg-slate-900/50 border border-slate-800/50 rounded-xl text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                      {order.status === 'Served' ? (
+                      {order.status === 'Paid' ? (
                         <>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                          Served & Completed
+                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
+                          {t('paid')}
                         </>
                       ) : (
                         <>
                           <X className="w-3.5 h-3.5 text-rose-500" />
-                          Ticket Cancelled
+                          {t('cancelled')}
                         </>
                       )}
                     </div>
@@ -553,7 +738,121 @@ export default function AdminDashboard({ onNewOrderToast }) {
             ))}
           </div>
         )}
+          </>
+        ) : (
+          <div className="flex flex-col gap-6">
+            {/* Table Selection Row */}
+            {(() => {
+              const activeTables = Array.from(new Set(
+                orders.filter(o => ['Pending', 'Preparing', 'Served'].includes(o.status))
+                      .map(o => o.table_number)
+              )).sort((a, b) => {
+                // Try to sort numerically if "Table X"
+                const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
+                const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
+                return numA - numB;
+              });
 
+              if (activeTables.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center h-64 text-slate-500 bg-slate-950/30 rounded-2xl border border-slate-800/50">
+                    <Utensils className="w-10 h-10 mb-3 opacity-20" />
+                    <p className="text-sm font-medium">{t('no_active_tables')}</p>
+                    <p className="text-xs opacity-60 mt-1">{t('all_tables_clear')}</p>
+                  </div>
+                );
+              }
+
+              return (
+                <>                  {/* Selected Table Summary */}
+                  {selectedBillingTable && activeTables.includes(selectedBillingTable) && (
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 md:p-8 flex flex-col lg:flex-row gap-8">
+                      {/* Items List */}
+                      <div className="flex-1 printable-bill">
+                        <div className="flex items-center justify-between mb-6 border-b border-slate-800 pb-4">
+                          <h2 className="text-2xl font-black text-white">{t('bill_for', { table: localizeTable(selectedBillingTable) })}</h2>
+                          <div className="bg-slate-800 text-slate-300 px-3 py-1 rounded-lg text-xs font-bold">
+                            {t('active_tickets', { count: getTableSummary(selectedBillingTable).ticketCount })}
+                          </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-slate-800 text-slate-400 text-sm">
+                                <th className="py-3 font-semibold w-16 text-center">{t('qty')}</th>
+                                <th className="py-3 font-semibold">{t('item')}</th>
+                                <th className="py-3 font-semibold text-right w-24">{t('price')}</th>
+                                <th className="py-3 font-semibold text-right w-24">{t('total')}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/50">
+                              {getTableSummary(selectedBillingTable).items.map((item, idx) => (
+                                <tr key={idx} className="group hover:bg-slate-800/20 transition-colors">
+                                  <td className="py-4 text-center">
+                                    <span className="inline-block bg-slate-800 text-emerald-400 font-bold px-2.5 py-1 rounded-lg text-sm min-w-[32px]">
+                                      {item.quantity}
+                                    </span>
+                                  </td>
+                                  <td className="py-4">
+                                    <span className="font-semibold text-slate-200">{item.name}</span>
+                                  </td>
+                                  <td className="py-4 text-right text-slate-400 font-medium">
+                                    ${item.price.toFixed(2)}
+                                  </td>
+                                  <td className="py-4 text-right font-bold text-slate-300">
+                                    ${(item.price * item.quantity).toFixed(2)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="mt-8 pt-6 border-t border-slate-800 flex items-center justify-between">
+                          <span className="text-xl text-slate-400 font-bold uppercase tracking-wider">{t('grand_total')}</span>
+                          <span className="text-4xl font-black text-emerald-400">
+                            ${getTableSummary(selectedBillingTable).total.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="w-full lg:w-80 flex flex-col gap-4 hide-on-print">
+                        <button
+                          onClick={() => window.print()}
+                          className="w-full py-4 rounded-2xl font-bold bg-slate-800 hover:bg-slate-700 text-white transition-colors flex items-center justify-center gap-2 border border-slate-700 cursor-pointer"
+                        >
+                          {t('print_bill')}
+                        </button>
+                        <button
+                          onClick={() => {
+                            const summary = getTableSummary(selectedBillingTable);
+                            handleMarkTablePaid(summary.orderIds);
+                          }}
+                          className="w-full py-5 rounded-2xl font-black text-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <DollarSign className="w-6 h-6" />
+                          {t('mark_table_paid')}
+                        </button>
+                        
+                        <div className="mt-auto bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl">
+                          <h4 className="text-amber-400 font-bold text-xs uppercase mb-2 flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4" />
+                            Note
+                          </h4>
+                          <p className="text-slate-400 text-xs leading-relaxed">
+                            Marking the table as paid will close all active tickets and clear the table for new customers.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        )}
       </div>
 
     </div>

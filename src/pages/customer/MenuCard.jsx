@@ -118,7 +118,7 @@ export default function MenuCard({ product, cartQty, addToCart, removeFromCart, 
             id={`btn-view-details-${product.id}`}
           >
             <Info className="w-3.5 h-3.5" />
-            {showDetails ? 'Hide details' : 'View details'}
+            {showDetails ? t('hide_details') : t('view_details')}
           </button>
         </div>
 

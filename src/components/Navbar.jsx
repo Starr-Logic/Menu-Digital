@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChefHat, Menu, X, LogOut, LogIn, HelpCircle, Lock, Zap, Users, QrCode, Package, Moon, Sun, Globe, ClipboardList, BarChart3, Settings, Mail } from 'lucide-react';
+import { ChefHat, Menu, X, LogOut, LogIn, HelpCircle, Lock, Zap, Users, QrCode, Package, Moon, Sun, Globe, ClipboardList, BarChart3, Settings, Mail, Maximize, Minimize } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrders, triggerToast, isAdminLoggedIn, adminUser, onLogout }) {
   const { t, i18n } = useTranslation();
@@ -20,6 +20,28 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
     }
   }, [isDarkMode]);
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
   const openHelp = () => {
     window.location.href = 'mailto:contact@biteqr.com';
   };
@@ -36,14 +58,19 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
     }
   };
 
+  const isCustomerScan = typeof window !== 'undefined' && window.location.search.includes('table=');
+
   return (
     <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 shadow-xl" id="main-header">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4 h-16">
-          
-          {/* Logo and Branding */}
-          <div className="flex items-center gap-3 min-w-0" id="brand-container">
-            <div className="p-2 bg-linear-to-tr from-amber-500 to-orange-500 text-slate-950 rounded-xl shadow-lg shadow-amber-500/10">
+
+          {/* Logo and Branding (Hidden Admin Login Trigger) */}
+          <div
+            className="flex items-center gap-3 min-w-0"
+            id="brand-container"
+          >
+            <div className="p-2 bg-linear-to-tr from-amber-500 to-orange-500 text-slate-950 rounded-xl shadow-lg shadow-amber-500/10 hover:scale-105 transition-transform">
               <ChefHat className="w-5.5 h-5.5" />
             </div>
             <div>
@@ -62,14 +89,14 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                   className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
                 >
                   <HelpCircle className="w-4 h-4" />
-                  Help
+                  {t('help')}
                 </button>
                 <button
                   onClick={() => openContact()}
                   className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
                 >
                   <Mail className="w-4 h-4" />
-                  Contact
+                  {t('contact')}
                 </button>
                 <button
                   onClick={() => i18n.changeLanguage(i18n.language === 'km' ? 'en' : 'km')}
@@ -79,12 +106,21 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                   {i18n.language === 'km' ? 'English' : 'ខ្មែរ'}
                 </button>
                 <button
-                  onClick={() => handleTabClick('kitchen')}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors ml-2 border-l border-slate-700 pl-4"
+                  onClick={() => setIsDarkMode(!isDarkMode)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
                 >
-                  <LogIn className="w-4 h-4" />
-                  Login
+                  {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
+
+                {!isCustomerScan && (
+                  <button
+                    onClick={() => handleTabClick('kitchen')}
+                    className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors border-l border-slate-700 pl-4 ml-2"
+                  >
+                    <Lock className="w-4 h-4" />
+                    {t('admin_login')}
+                  </button>
+                )}
               </>
             ) : (
               // ADMIN MENU - DESKTOP
@@ -94,35 +130,29 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                   className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
                 >
                   <ClipboardList className="w-4 h-4" />
-                  Orders
+                  {t('orders')}
                 </button>
-                <button
-                  onClick={() => handleTabClick('customer')}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
-                >
-                  <Users className="w-4 h-4" />
-                  Customers
-                </button>
+
                 <button
                   onClick={() => handleTabClick('qr-generator')}
                   className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
                 >
                   <QrCode className="w-4 h-4" />
-                  QR
+                  {t('qr_code')}
                 </button>
                 <button
                   onClick={() => handleTabClick('add-product')}
                   className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
                 >
                   <Package className="w-4 h-4" />
-                  Products
+                  {t('products')}
                 </button>
                 <button
                   onClick={() => handleTabClick('analytics')}
                   className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
                 >
                   <BarChart3 className="w-4 h-4" />
-                  Analytics
+                  {t('analytics')}
                 </button>
                 <button
                   onClick={() => i18n.changeLanguage(i18n.language === 'km' ? 'en' : 'km')}
@@ -132,11 +162,23 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                   {i18n.language === 'km' ? 'English' : 'ខ្មែរ'}
                 </button>
                 <button
+                  onClick={() => setIsDarkMode(!isDarkMode)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
+                >
+                  {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={toggleFullscreen}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
+                >
+                  {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                </button>
+                <button
                   onClick={() => handleTabClick('settings')}
                   className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-amber-400 transition-colors"
                 >
                   <Settings className="w-4 h-4" />
-                  Settings
+                  {t('settings')}
                 </button>
                 <button
                   onClick={() => {
@@ -146,7 +188,7 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                   className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors ml-2 border-l border-slate-700 pl-4"
                 >
                   <LogOut className="w-4 h-4" />
-                  Logout
+                  {t('logout')}
                 </button>
               </>
             )}
@@ -176,10 +218,10 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors"
                     >
                       {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                      {isDarkMode ? 'Light Mode' : 'Night Mode'}
+                      {isDarkMode ? t('light_mode') : t('night_mode')}
                     </button>
-                
-                
+
+
                     <button
                       onClick={() => {
                         openHelp();
@@ -188,7 +230,7 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
                     >
                       <HelpCircle className="w-4 h-4" />
-                      Help and support
+                      {t('help_support')}
                     </button>
                     <button
                       onClick={() => {
@@ -198,7 +240,7 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
                     >
                       <Mail className="w-4 h-4" />
-                      Contact
+                      {t('contact')}
                     </button>
                     <button
                       onClick={() => {
@@ -210,15 +252,16 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                       <Globe className="w-4 h-4" />
                       {i18n.language === 'km' ? 'English' : 'ខ្មែរ'}
                     </button>
-                    <button
-                      onClick={() => {
-                        handleTabClick('kitchen');
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-amber-400 hover:bg-amber-500/10 transition-colors border-t border-slate-700"
-                    >
-                      <LogIn className="w-4 h-4" />
-                      Login
-                    </button>
+
+                    {!isCustomerScan && (
+                      <button
+                        onClick={() => handleTabClick('kitchen')}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                      >
+                        <Lock className="w-4 h-4" />
+                        {t('admin_login')}
+                      </button>
+                    )}
                   </>
                 ) : (
                   // ADMIN MENU - MOBILE
@@ -230,17 +273,9 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors"
                     >
                       <ClipboardList className="w-4 h-4" />
-                      Orders
+                      {t('orders')}
                     </button>
-                    <button
-                      onClick={() => {
-                        handleTabClick('customer');
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
-                    >
-                      <Users className="w-4 h-4" />
-                      Customers
-                    </button>
+
                     <button
                       onClick={() => {
                         handleTabClick('qr-generator');
@@ -248,7 +283,7 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
                     >
                       <QrCode className="w-4 h-4" />
-                      QR
+                      {t('qr_code')}
                     </button>
                     <button
                       onClick={() => {
@@ -257,7 +292,7 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
                     >
                       <Package className="w-4 h-4" />
-                      Products
+                      {t('products')}
                     </button>
                     <button
                       onClick={() => {
@@ -266,7 +301,7 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
                     >
                       <BarChart3 className="w-4 h-4" />
-                      Analytics
+                      {t('analytics')}
                     </button>
                     <button
                       onClick={() => {
@@ -280,12 +315,32 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                     </button>
                     <button
                       onClick={() => {
+                        setIsDarkMode(!isDarkMode);
+                        setDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                    >
+                      {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                      {isDarkMode ? t('light_mode') : t('night_mode')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        toggleFullscreen();
+                        setDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
+                    >
+                      {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                      {isFullscreen ? t('exit_fullscreen') : t('fullscreen')}
+                    </button>
+                    <button
+                      onClick={() => {
                         handleTabClick('settings');
                       }}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors border-t border-slate-700"
                     >
                       <Settings className="w-4 h-4" />
-                      Settings
+                      {t('settings')}
                     </button>
                     <button
                       onClick={() => {
@@ -295,7 +350,7 @@ export default function Navbar({ activeTab, setActiveTab, statsPending, fetchOrd
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-400 hover:bg-red-500/20 transition-colors border-t border-slate-700"
                     >
                       <LogOut className="w-4 h-4" />
-                      Logout
+                      {t('logout')}
                     </button>
                   </>
                 )}

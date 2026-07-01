@@ -1,5 +1,6 @@
 import { BarChart3, TrendingUp, DollarSign, ShoppingCart, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart,
   Bar,
@@ -17,6 +18,7 @@ import {
 } from 'recharts';
 
 export default function Analytics({ orders = [] }) {
+  const { t } = useTranslation();
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
@@ -60,10 +62,10 @@ export default function Analytics({ orders = [] }) {
   };
 
   const statusChartData = [
-    { name: 'Pending', value: orders.filter(o => o.status === 'Pending').length },
-    { name: 'Preparing', value: orders.filter(o => o.status === 'Preparing').length },
-    { name: 'Served', value: orders.filter(o => o.status === 'Served').length },
-    { name: 'Cancelled', value: orders.filter(o => o.status === 'Cancelled').length },
+    { name: t('pending'), value: orders.filter(o => o.status === 'Pending').length },
+    { name: t('preparing'), value: orders.filter(o => o.status === 'Preparing').length },
+    { name: t('served'), value: orders.filter(o => o.status === 'Served').length },
+    { name: t('cancelled'), value: orders.filter(o => o.status === 'Cancelled').length },
   ];
 
   const ordersByDate = orders.reduce((acc, order) => {
@@ -82,9 +84,9 @@ export default function Analytics({ orders = [] }) {
       <div className="space-y-2 border-b border-slate-800 pb-6">
         <h1 className="text-3xl font-black text-slate-100 flex items-center gap-3">
           <BarChart3 className="w-8 h-8 text-amber-500" />
-          Sales Analytics
+          {t('sales_analytics')}
         </h1>
-        <p className="text-slate-400 text-sm">Real-time business insights and performance metrics</p>
+        <p className="text-slate-400 text-sm">{t('analytics_desc')}</p>
       </div>
 
       {/* Key Metrics Grid */}
@@ -92,74 +94,74 @@ export default function Analytics({ orders = [] }) {
         {/* Total Revenue */}
         <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 space-y-3 hover:border-amber-500/30 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase text-slate-500 tracking-wider">Total Revenue</span>
+            <span className="text-xs font-black uppercase text-slate-500 tracking-wider">{t('total_revenue')}</span>
             <DollarSign className="w-5 h-5 text-amber-500" />
           </div>
           <div className="text-2xl font-black text-slate-100">
             ${stats.totalRevenue.toFixed(2)}
           </div>
-          <p className="text-[11px] text-slate-500">From {stats.totalOrders} orders</p>
+          <p className="text-[11px] text-slate-500">{t('from_orders', { count: stats.totalOrders })}</p>
         </div>
 
         {/* Total Orders */}
         <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 space-y-3 hover:border-blue-500/30 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase text-slate-500 tracking-wider">Total Orders</span>
+            <span className="text-xs font-black uppercase text-slate-500 tracking-wider">{t('total_orders')}</span>
             <ShoppingCart className="w-5 h-5 text-blue-500" />
           </div>
           <div className="text-2xl font-black text-slate-100">
             {stats.totalOrders}
           </div>
-          <p className="text-[11px] text-slate-500">All time orders</p>
+          <p className="text-[11px] text-slate-500">{t('all_time_orders')}</p>
         </div>
 
         {/* Average Order Value */}
         <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 space-y-3 hover:border-emerald-500/30 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase text-slate-500 tracking-wider">Avg Order</span>
+            <span className="text-xs font-black uppercase text-slate-500 tracking-wider">{t('avg_order')}</span>
             <TrendingUp className="w-5 h-5 text-emerald-500" />
           </div>
           <div className="text-2xl font-black text-slate-100">
             ${stats.averageOrderValue.toFixed(2)}
           </div>
-          <p className="text-[11px] text-slate-500">Average per order</p>
+          <p className="text-[11px] text-slate-500">{t('average_per_order')}</p>
         </div>
 
         {/* Completed Orders */}
         <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 space-y-3 hover:border-green-500/30 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase text-slate-500 tracking-wider">Completed</span>
+            <span className="text-xs font-black uppercase text-slate-500 tracking-wider">{t('completed')}</span>
             <div className="w-5 h-5 text-green-500 bg-green-500/20 rounded-full flex items-center justify-center text-[10px] font-black">✓</div>
           </div>
           <div className="text-2xl font-black text-slate-100">
             {stats.completedOrders}
           </div>
-          <p className="text-[11px] text-slate-500">Served orders</p>
+          <p className="text-[11px] text-slate-500">{t('served_orders')}</p>
         </div>
 
         {/* Pending Orders */}
         <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 space-y-3 hover:border-orange-500/30 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase text-slate-500 tracking-wider">Pending</span>
+            <span className="text-xs font-black uppercase text-slate-500 tracking-wider">{t('pending')}</span>
             <Clock className="w-5 h-5 text-orange-500" />
           </div>
           <div className="text-2xl font-black text-slate-100">
             {stats.pendingOrders}
           </div>
-          <p className="text-[11px] text-slate-500">In progress</p>
+          <p className="text-[11px] text-slate-500">{t('in_progress')}</p>
         </div>
       </div>
 
       {/* Top Products */}
       <div className="bg-slate-900/60 rounded-3xl border border-slate-800 p-8 space-y-6">
         <div className="space-y-2">
-          <h2 className="text-xl font-black text-slate-100">Top Selling Items</h2>
-          <p className="text-sm text-slate-500">Most ordered products by quantity</p>
+          <h2 className="text-xl font-black text-slate-100">{t('top_selling_items')}</h2>
+          <p className="text-sm text-slate-500">{t('most_ordered_products')}</p>
         </div>
 
         {Object.keys(stats.topProducts).length === 0 ? (
           <div className="text-center py-12 text-slate-500">
-            <p className="text-sm">No order data available yet</p>
+            <p className="text-sm">{t('no_order_data')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -171,7 +173,7 @@ export default function Analytics({ orders = [] }) {
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-slate-200">{productName}</span>
-                    <span className="text-xs font-bold text-amber-400">{count} sold</span>
+                    <span className="text-xs font-bold text-amber-400">{count} {t('sold')}</span>
                   </div>
                   <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
                     <div
@@ -191,27 +193,23 @@ export default function Analytics({ orders = [] }) {
       {/* Summary Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-3xl border border-amber-500/20 p-8 space-y-4">
-          <h3 className="text-lg font-black text-amber-400">Revenue Performance</h3>
+          <h3 className="text-lg font-black text-amber-400">{t('revenue_performance')}</h3>
           <div className="text-4xl font-black text-slate-100">
             ${stats.totalRevenue.toFixed(0)}
           </div>
-          <p className="text-sm text-slate-400">
-            Generated from <span className="font-bold text-slate-200">{stats.totalOrders}</span> total orders
-          </p>
+          <p className="text-sm text-slate-400" dangerouslySetInnerHTML={{ __html: t('generated_from', { count: stats.totalOrders }) }} />
         </div>
 
         <div className="bg-gradient-to-br from-emerald-500/10 to-green-500/10 rounded-3xl border border-emerald-500/20 p-8 space-y-4">
-          <h3 className="text-lg font-black text-emerald-400">Completion Rate</h3>
+          <h3 className="text-lg font-black text-emerald-400">{t('completion_rate')}</h3>
           <div className="text-4xl font-black text-slate-100">
             {stats.totalOrders > 0 ? Math.round((stats.completedOrders / stats.totalOrders) * 100) : 0}%
           </div>
-          <p className="text-sm text-slate-400">
-            <span className="font-bold text-slate-200">{stats.completedOrders}</span> out of {stats.totalOrders} orders completed
-          </p>
+          <p className="text-sm text-slate-400" dangerouslySetInnerHTML={{ __html: t('out_of_orders_completed', { completed: stats.completedOrders, total: stats.totalOrders }) }} />
         </div>
 
         <div className="bg-slate-900/60 rounded-3xl border border-slate-800 p-6">
-          <h3 className="text-lg font-black text-slate-100">Order Timeline</h3>
+          <h3 className="text-lg font-black text-slate-100">{t('order_timeline')}</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={ordersByDateData} margin={{ top: 16, right: 0, left: -20, bottom: 0 }}>
@@ -231,8 +229,8 @@ export default function Analytics({ orders = [] }) {
         <div className="bg-slate-900/60 rounded-3xl border border-slate-800 p-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-lg font-black text-slate-100">Order Status Breakdown</h3>
-              <p className="text-sm text-slate-500">Live order status distribution</p>
+              <h3 className="text-lg font-black text-slate-100">{t('order_status_breakdown')}</h3>
+              <p className="text-sm text-slate-500">{t('live_order_status')}</p>
             </div>
           </div>
           <div className="h-72">
@@ -264,8 +262,8 @@ export default function Analytics({ orders = [] }) {
         <div className="bg-slate-900/60 rounded-3xl border border-slate-800 p-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-lg font-black text-slate-100">Top Products Chart</h3>
-              <p className="text-sm text-slate-500">Quantity sold for top items</p>
+              <h3 className="text-lg font-black text-slate-100">{t('top_products_chart')}</h3>
+              <p className="text-sm text-slate-500">{t('quantity_sold')}</p>
             </div>
           </div>
           <div className="h-72">
