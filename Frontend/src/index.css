@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Segoe UI", "Noto Sans Khmer", "Khmer OS", "Arial Unicode MS", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  font-family: "Segoe UI", "Noto Sans Khmer", "Khmer OS", "Arial Unicode MS", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background-color: #020617;
+  color: #f1f5f9;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html[data-theme='light'] body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+html[data-theme='light'] [class*="bg-slate-8"],
+html[data-theme='light'] [class*="bg-slate-9"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+html[data-theme='light'] [class*="text-slate-1"],
+html[data-theme='light'] [class*="text-slate-2"],
+html[data-theme='light'] [class*="text-slate-3"],
+html[data-theme='light'] [class*="text-slate-4"],
+html[data-theme='light'] [class*="text-slate-5"] {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] [class*="border-slate-7"],
+html[data-theme='light'] [class*="border-slate-8"],
+html[data-theme='light'] [class*="border-slate-9"] {
+  border-color: #e2e8f0 !important;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+@media print {
+  @page {
+    margin: 0;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .printable-bill, .printable-bill * {
+    visibility: visible;
+  }
+  .printable-bill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 40px 50px;
+    background: white !important;
+    color: black !important;
+  }
+  .hide-on-print {
+    display: none !important;
+  }
+  /* Force dark elements to light for printing */
+  .printable-bill .text-slate-200,
+  .printable-bill .text-slate-300,
+  .printable-bill .text-slate-400,
+  .printable-bill .text-emerald-400,
+  .printable-bill .text-white {
+    color: #000 !important;
+  }
+  .printable-bill .bg-slate-800,
+  .printable-bill .bg-slate-900 {
+    background: transparent !important;
+    color: #000 !important;
+  }
+  .printable-bill .border-slate-800,
+  .printable-bill .border-slate-800\/50,
+  .printable-bill .divide-slate-800\/50 > * {
+    border-color: #cbd5e1 !important;
+  }
+}
