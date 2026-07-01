@@ -22,7 +22,46 @@ import MenuCard from './components/MenuCard';
 import CartModal from './components/CartModal';
 import ProductDetailModal from './components/ProductDetailModal';
 import OrderSuccessModal from './components/OrderSuccessModal';
-import { API_BASE_URL } from './config';
+import { API_BASE_URL, SOCKET_URL } from './config';
+import { io } from 'socket.io-client';
+
+// Helper component for live countdown
+function CountdownTimer({ order }) {
+  const [timeLeftStr, setTimeLeftStr] = useState('');
+
+  useEffect(() => {
+    if (!order.prep_time_minutes || order.status !== 'Preparing') return;
+    
+    const calculateRemaining = () => {
+      const updatedAt = new Date(order.updatedAt || Date.now());
+      const endTime = updatedAt.getTime() + order.prep_time_minutes * 60000;
+      const now = Date.now();
+      const diffSeconds = Math.max(0, Math.floor((endTime - now) / 1000));
+      
+      if (diffSeconds <= 0) return 'Ready!';
+      
+      const m = Math.floor(diffSeconds / 60);
+      const s = diffSeconds % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    // Set initial
+    setTimeLeftStr(calculateRemaining());
+
+    // Update every 1 second
+    const interval = setInterval(() => {
+      setTimeLeftStr(calculateRemaining());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [order]);
+
+  return (
+    <div className="bg-indigo-950/80 border border-indigo-400/30 px-3 py-1.5 rounded-xl text-sm font-black text-indigo-300 shadow-inner min-w-[70px] text-center font-mono">
+      {timeLeftStr}
+    </div>
+  );
+}
 
 export default function App() {
   const { t, i18n } = useTranslation();
@@ -164,6 +203,17 @@ export default function App() {
   const fetchOrders = async (silent = false) => {
     const token = localStorage.getItem('adminToken');
     if (!token) {
+      if (activeTab === 'customer' && selectedTable) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/orders/table/${encodeURIComponent(selectedTable)}`);
+          if (res.ok) {
+            const tableOrders = await res.json();
+            setOrders(tableOrders);
+          }
+        } catch (err) {
+          console.error('Error fetching table orders:', err);
+        }
+      }
       if (!silent) setOrdersLoading(false);
       return;
     }
@@ -207,12 +257,31 @@ export default function App() {
       }
     })();
 
-    // Poll orders every 5 seconds for live status/updates
+    // Poll orders every 5 seconds for live status/updates (fallback for admin)
     const interval = setInterval(() => {
       fetchOrders(true);
     }, 5000);
 
-    return () => clearInterval(interval);
+    // Setup global socket listener for real-time updates for both admin and customers
+    const socket = io(SOCKET_URL, {
+      reconnectionAttempts: 5,
+      timeout: 10000,
+    });
+    socket.on('new_order', (newOrder) => {
+      setOrders(prev => {
+        // Prevent duplicate orders
+        if (prev.find(o => o.id === newOrder.id)) return prev;
+        return [newOrder, ...prev];
+      });
+    });
+    socket.on('order_updated', (updatedOrder) => {
+      setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+    });
+
+    return () => {
+      clearInterval(interval);
+      socket.disconnect();
+    };
   }, []);
 
   // Derived unique categories from loaded products
@@ -302,6 +371,8 @@ export default function App() {
 
       const orderResult = await response.json();
       setLastPlacedOrder(orderResult);
+      // Immediately push to local state so the customer sees the Pending banner instantly
+      setOrders(prev => [orderResult, ...prev]);
       setCart({});
       setOrderNote('');
       setIsMobileCartOpen(false); // Close mobile drawer if open
@@ -720,6 +791,43 @@ export default function App() {
           <p className="text-[10px] text-slate-600">All prices and actions reflect live requests to our backend SQLite API endpoints. Zero mock data is used.</p>
         </div>
       </footer>
+
+      {/* ORDER NOTIFICATIONS FIXED AT BOTTOM */}
+      {activeTab === 'customer' && (
+        <div className="fixed bottom-24 lg:bottom-8 inset-x-4 z-40 max-w-md mx-auto pointer-events-none">
+          <div className="pointer-events-auto space-y-3">
+            {orders.filter(o => o.table_number === selectedTable && ['Pending', 'Preparing'].includes(o.status)).slice(0, 1).map(order => (
+               <div key={order.id} className="bg-indigo-600/95 border border-indigo-500 text-indigo-100 p-4 rounded-2xl flex items-center justify-between shadow-2xl backdrop-blur-md">
+                  <div className="flex items-center gap-3">
+                    {order.status === 'Pending' ? (
+                      <ListOrdered className="w-6 h-6 text-amber-300 animate-pulse" />
+                    ) : (
+                      <CheckCircle2 className="w-6 h-6 text-indigo-300 animate-pulse" />
+                    )}
+                    <div>
+                      <span className="text-xs font-bold block uppercase tracking-wide">
+                        Order #{order.id} {order.status}
+                      </span>
+                      <span className="text-[10px] text-indigo-200 font-light">
+                        {order.status === 'Pending' 
+                          ? 'Waiting for kitchen to prepare...' 
+                          : 'Chef is working on your ticket'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {order.status === 'Preparing' && order.prep_time_minutes ? (
+                    <CountdownTimer order={order} />
+                  ) : order.status === 'Pending' ? (
+                    <div className="bg-indigo-950/80 border border-indigo-400/30 px-3 py-1.5 rounded-xl text-[10px] font-black text-amber-300 shadow-inner">
+                      Waiting
+                    </div>
+                  ) : null}
+                </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* MOBILE STICKY FLOATING CART BAR AND MOBILE DRAWER CART OVERLAY */}
       {activeTab === 'customer' && (

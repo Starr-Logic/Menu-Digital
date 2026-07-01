@@ -23,7 +23,8 @@ const createEmptyForm = () => ({
   price: '',
   category: 'Food',
   description: '',
-  image: ''
+  image: '',
+  prep_time_minutes: 5
 });
 
 export default function AddProduct({ onProductAdded, onCancel }) {
@@ -66,7 +67,8 @@ export default function AddProduct({ onProductAdded, onCancel }) {
         price: product.price ?? '',
         category: product.category || 'Food',
         description: product.description || '',
-        image: product.image || ''
+        image: product.image || '',
+        prep_time_minutes: product.prep_time_minutes ?? 5
       });
       setImagePreview(product.image || '');
       setImageSourceMode(product.image?.startsWith('/uploads/') ? 'upload' : product.image?.startsWith('http') ? 'url' : 'upload');
@@ -156,6 +158,7 @@ export default function AddProduct({ onProductAdded, onCancel }) {
       payload.append('price', numericPrice.toString());
       payload.append('description', formData.description.trim());
       payload.append('category', formData.category);
+      payload.append('prep_time_minutes', formData.prep_time_minutes);
 
       if (selectedFile) {
         payload.append('image', selectedFile);
@@ -342,6 +345,23 @@ export default function AddProduct({ onProductAdded, onCancel }) {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="product-prep-time" className="block text-xs font-black uppercase text-slate-400 tracking-wider">
+                  Prep Time (minutes) <span className="text-teal-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="product-prep-time"
+                  name="prep_time_minutes"
+                  min="1"
+                  value={formData.prep_time_minutes}
+                  onChange={handleChange}
+                  placeholder="5"
+                  required
+                  className="block w-full px-4 py-3 bg-slate-950 border border-slate-800 focus:border-teal-500/60 rounded-xl text-slate-200 text-sm placeholder-slate-600 focus:outline-none transition-all"
+                />
               </div>
 
               <div className="space-y-2">

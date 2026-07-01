@@ -72,7 +72,7 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
     try {
-      const { name, price, description, category } = req.body;
+      const { name, price, description, category, prep_time_minutes } = req.body;
       if (!name || !price || !category) {
         return res.status(400).json({ error: 'Name, price, and category are required' });
       }
@@ -83,7 +83,8 @@ router.post('/', verifyToken, async (req, res) => {
         price: Number(price),
         description: description || null,
         image,
-        category
+        category,
+        prep_time_minutes: prep_time_minutes ? Number(prep_time_minutes) : 5
       });
 
       res.status(201).json(newProduct);
@@ -108,7 +109,7 @@ router.put('/:id', verifyToken, async (req, res) => {
         return res.status(404).json({ error: 'Product not found' });
       }
 
-      const { name, price, description, category } = req.body;
+      const { name, price, description, category, prep_time_minutes } = req.body;
       if (!name || !price || !category) {
         return res.status(400).json({ error: 'Name, price, and category are required' });
       }
@@ -126,7 +127,8 @@ router.put('/:id', verifyToken, async (req, res) => {
         price: Number(price),
         description: description || null,
         image: nextImage || null,
-        category
+        category,
+        prep_time_minutes: prep_time_minutes ? Number(prep_time_minutes) : 5
       });
 
       res.json(product);

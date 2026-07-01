@@ -16,7 +16,7 @@ router.get('/', verifyToken, async (req, res) => {
             {
               model: Product,
               as: 'product',
-              attributes: ['name', 'category', 'image']
+              attributes: ['name', 'category', 'image', 'prep_time_minutes']
             }
           ]
         }
@@ -27,6 +27,36 @@ router.get('/', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching orders:', error);
     res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+// GET /api/orders/table/:tableName : Fetch active orders for a specific table (public)
+router.get('/table/:tableName', async (req, res) => {
+  try {
+    const orders = await Order.findAll({
+      where: {
+        table_number: req.params.tableName,
+        status: ['Pending', 'Preparing']
+      },
+      include: [
+        {
+          model: OrderItem,
+          as: 'items',
+          include: [
+            {
+              model: Product,
+              as: 'product',
+              attributes: ['name', 'category', 'image', 'prep_time_minutes']
+            }
+          ]
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching table orders:', error);
+    res.status(500).json({ error: 'Failed to fetch table orders' });
   }
 });
 
@@ -144,7 +174,7 @@ router.post('/', async (req, res) => {
 router.patch('/:id/status', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, prep_time_minutes } = req.body;
 
     const allowedStatuses = ['Pending', 'Preparing', 'Served', 'Cancelled'];
     if (!status || !allowedStatuses.includes(status)) {
@@ -157,6 +187,9 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
     }
 
     order.status = status;
+    if (prep_time_minutes !== undefined) {
+      order.prep_time_minutes = prep_time_minutes;
+    }
     await order.save();
 
     // Fetch full order details to return and broadcast

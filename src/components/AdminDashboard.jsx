@@ -21,6 +21,44 @@ import {
   Filter
 } from 'lucide-react';
 
+// Helper component for live countdown in Admin view
+function CountdownTimer({ order }) {
+  const [timeLeftStr, setTimeLeftStr] = useState('');
+
+  useEffect(() => {
+    if (!order.prep_time_minutes || order.status !== 'Preparing') return;
+    
+    const calculateRemaining = () => {
+      const updatedAt = new Date(order.updatedAt || Date.now());
+      const endTime = updatedAt.getTime() + order.prep_time_minutes * 60000;
+      const now = Date.now();
+      const diffSeconds = Math.max(0, Math.floor((endTime - now) / 1000));
+      
+      if (diffSeconds <= 0) return 'Ready!';
+      
+      const m = Math.floor(diffSeconds / 60);
+      const s = diffSeconds % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    // Set initial
+    setTimeLeftStr(calculateRemaining());
+
+    // Update every 1 second
+    const interval = setInterval(() => {
+      setTimeLeftStr(calculateRemaining());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [order]);
+
+  return (
+    <div className="bg-indigo-950/80 border border-indigo-400/30 px-2 py-1 rounded-md text-[10px] font-black text-indigo-300 shadow-inner ml-2 font-mono">
+      {timeLeftStr}
+    </div>
+  );
+}
+
 export default function AdminDashboard({ onNewOrderToast }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -158,16 +196,19 @@ export default function AdminDashboard({ onNewOrderToast }) {
   }, []);
 
   // Handler to update status via PATCH
-  const handleUpdateStatus = async (orderId, newStatus) => {
+  const handleUpdateStatus = async (orderId, newStatus, prep_time_minutes = null) => {
     try {
       const token = localStorage.getItem('adminToken');
+      const payload = { status: newStatus };
+      if (prep_time_minutes !== null) payload.prep_time_minutes = prep_time_minutes;
+
       const res = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(payload),
       });
 
       if (res.status === 401) {
@@ -395,14 +436,19 @@ export default function AdminDashboard({ onNewOrderToast }) {
                     <span className="text-[10px] text-slate-500 font-bold uppercase">#{order.id}</span>
                   </div>
                   
-                  <span className={`text-[10px] font-black px-2.5 py-1 rounded-md tracking-wider uppercase ${
-                    order.status === 'Pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                    order.status === 'Preparing' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
-                    order.status === 'Served' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                    'bg-slate-850 text-slate-400 border border-slate-800/50'
-                  }`}>
-                    {order.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-black px-2.5 py-1 rounded-md tracking-wider uppercase ${
+                      order.status === 'Pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                      order.status === 'Preparing' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
+                      order.status === 'Served' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                      'bg-slate-850 text-slate-400 border border-slate-800/50'
+                    }`}>
+                      {order.status}
+                    </span>
+                    {order.status === 'Preparing' && order.prep_time_minutes > 0 && (
+                      <CountdownTimer order={order} />
+                    )}
+                  </div>
                 </div>
 
                 {/* Ticket Body Content */}
@@ -448,7 +494,12 @@ export default function AdminDashboard({ onNewOrderToast }) {
                   {order.status === 'Pending' && (
                     <div className="grid grid-cols-3 gap-2">
                       <button
-                        onClick={() => handleUpdateStatus(order.id, 'Preparing')}
+                        onClick={() => {
+                          const maxPrepTime = order.items && order.items.length > 0 
+                            ? Math.max(...order.items.map(item => item.product?.prep_time_minutes || 5))
+                            : 5;
+                          handleUpdateStatus(order.id, 'Preparing', maxPrepTime);
+                        }}
                         className="col-span-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1"
                       >
                         <Play className="w-3 h-3 fill-white" />

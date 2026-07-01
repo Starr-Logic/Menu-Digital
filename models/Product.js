@@ -27,6 +27,11 @@ export default function(sequelize) {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    prep_time_minutes: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 5,
+    },
     createdAt: {
       type: DataTypes.DATE,
       field: 'created_at',
